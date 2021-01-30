@@ -4,11 +4,11 @@ This container image can be used to run the ntopng network traffic flow analysis
 
 This project was inspired by Carlos Talbot's  [tusc/ntopng-udm project](https://github.com/tusc/ntopng-udm).  This container differs in the following ways:
 
-1. A Fedora container is used, providing repository packages that are more up-to-date than those provided by Ubuntu.
-2. The current GitHub version of ntopng is used, as it existed when the container was built, not the latest stable branch.
-3. The libpcap-supported features of ntopng are enabled.
-4. A more up-to-date version of the geoipupdate tool is used.
-5. The start-up process for the container has been modified to ignore geoipupdate failures.
+1. A Fedora container is used, because I like being on the semi-bleeding edge.
+2. The libcap-supported features of ntopng are compiled in, including network discovery.
+3. A more up-to-date version of the geoipupdate tool is used.
+4. The start-up process for the container has been modified so that startup will not loop endlessly when the GeoIP.conf file causes an error.
+5. The podman run command in this documentation has been fixed so that the ntopng configuration data stored in the redis DB will be persisted through container updates and restarts
 
 # Running The Container On The UDM
 
@@ -19,14 +19,14 @@ Access the UDM as the root user via ssh.  You will be placed into the system's r
 ```
 mkdir -p /mnt/data/ntopng/redis
 mkdir -p /mnt/data/ntopng/lib
-curl -Lo /mnt/data/ntopng/GeoIP.conf http://...
-curl -Lo /mnt/data/ntopng/ntopng.conf http://...
-curl -Lo /mnt/data/ntopng/redis.conf http://...
+curl -Lo /mnt/data/ntopng/GeoIP.conf https://github.com/dlk3/udm-hacks/raw/master/ntopng-udm/data/ntopng/GeoIP.conf
+curl -Lo /mnt/data/ntopng/ntopng.conf https://github.com/dlk3/udm-hacks/raw/master/ntopng-udm/data/ntopng/ntopng.conf
+curl -Lo /mnt/data/ntopng/redis.conf https://github.com/dlk3/udm-hacks/blob/master/ntopng-udm/data/ntopng/redis.conf
 ```
 
 ## Enabling GeoIP support
 
-If you want GeoIP support, i.e., you want country flags displayed next to the hosts and IP addresses in the ntopng user interface, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account and register for an API key.  These must be placed into the /mnt/data/ntopng/GeoIP.conf file in the container's data directory.
+If you want GeoIP support, i.e., you want country flags displayed next to the hosts and IP addresses in the ntopng user interface, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account and register for an API key.  These values must be placed into the /mnt/data/ntopng/GeoIP.conf file in the container's data directory.  
 
 ## Installing The Container
 
@@ -44,10 +44,14 @@ podman run -d --net=host --restart always \
    -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /mnt/data/ntopng/lib:/var/lib/ntopng \
+   -v /mnt/data/ntopng/redis:/var/lib/redis \
    ntopng-udm:latest
 ```
 ## Accessing ntopng
 
 Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: hppts://192.168.1.1:3001
 
+In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
+
 The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
+

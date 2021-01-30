@@ -54,3 +54,4 @@ docker buildx inspect --bootstrap
 ## Build ntopng-udm for an arm64 host, i.e., the UDM
 
 `docker buildx build --platform linux/arm64 -t ntopng-udm:latest --load .`
+
