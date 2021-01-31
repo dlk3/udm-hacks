@@ -34,9 +34,9 @@ else
 	#  COPR: The custom script that gets/creates the sources and the spec file
 	git clone https://github.com/dlk3/udm-hacks.git
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.spec .
-	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.conf ${HOME}/rpmbuild/SOURCES/
-	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.service ${HOME}/rpmbuild/SOURCES/
-	mv udm-hacks/ntopng-udm-fedora/copr/ntopng ${HOME}/rpmbuild/SOURCES/
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.conf .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.service .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.sysconfig .
 	rm -fr udm-hacks
 	NAME='nDPI'
 	git clone https://github.com/ntop/${NAME}.git
@@ -45,7 +45,7 @@ else
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' 'ntopng.spec')
 	VERSION=$(sed -n 's/^Version:[[:space:]]*//p' 'ntopng.spec')
 	git clone git://github.com/ntop/ntopng.git
-	tar -czf ${NAME}-${VERSION}.tar.gz ${NAME}
+	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 
 	#  Parse the package name, version, release, sources and architecture
@@ -58,6 +58,12 @@ else
 	SOURCE0=$(echo $SOURCE0 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	SOURCE1=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
 	SOURCE1=$(echo $SOURCE1 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE2=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE2=$(echo $SOURCE2 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE3=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE3=$(echo $SOURCE3 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE4=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE4=$(echo $SOURCE4 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	ARCH=$(sed -n 's/^BuildArch:[[:space:]]*//p' "$SPECFILE")
 
 	#  Install the BuildRequires packages listed in the spec file
@@ -68,13 +74,18 @@ else
 		PACKAGES+="$(echo $LINE | cut -f2 -d':' | sed 's/,/ /g') "
 	done
 	IFS=$oIFS
-	echo "$PACKAGES"
 	[ "$PACKAGES" != "" ] && dnf install -y $PACKAGES
 	
 	#  Move the source files into place in the ${HOME}/rpmbuild tree
 	mv /tmp/copr-test/${SPECFILE} ${HOME}/rpmbuild/SPECS/
 	mv /tmp/copr-test/${SOURCE0} ${HOME}/rpmbuild/SOURCES/
 	mv /tmp/copr-test/${SOURCE1} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE2} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE3} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE4} ${HOME}/rpmbuild/SOURCES/
+	
+	/bin/sh
+	exit
 	
 	#  Build the package ...
 	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"

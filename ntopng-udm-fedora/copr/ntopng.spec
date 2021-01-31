@@ -15,7 +15,7 @@ Source0:	%{name}.tar.gz
 Source1:	nDPI.tar.gz
 Source2:	%{name}.conf
 Source3:	%{name}.service
-Source4:	%{name}
+Source4:	%{name}.sysconfig
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, openssl, redis, sqlite, zlib
 %{systemd_requires}
@@ -56,7 +56,7 @@ install -m 644 -t %{buildroot}/etc/ntopng %{SOURCE2}
 mkdir -p %{buildroot}/usr/lib/systemd/system
 install -m 644 -t %{buildroot}/usr/lib/systemd/system %{SOURCE3}
 mkdir -p %{buildroot}/etc/sysconfig/
-install -m 644 -t %{buildroot}/etc/sysconfig/${NAME} %{SOURCE4}
+install -m 644 %{SOURCE4} %{buildroot}/etc/sysconfig/${NAME}
 mkdir -p %{buildroot}/usr/share/ntopng
 cp -r httpdocs %{buildroot}/usr/share/ntopng
 cp -LR scripts %{buildroot}/usr/share/ntopng
