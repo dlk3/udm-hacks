@@ -47,7 +47,7 @@ make -j
 
 %install
 mkdir -p %{buildroot}%{_bindir}
-install -m 755 -t %{buildroot}%{_bindir} ntopngntopng
+install -m 755 -t %{buildroot}%{_bindir} ntopng/ntopng
 mkdir -p %{buildroot}/usr/man/man8
 install -m 644 -t %{buildroot}/usr/man/man8 ntopng/ntopng.8
 mkdir -p %{buildroot}/etc/ntopng
