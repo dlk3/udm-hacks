@@ -5,7 +5,7 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-Version:	4.3.20210130
+Version:	4.3.210131
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -43,7 +43,7 @@ cd ../%{name}
 ./autogen.sh
 ./configure
 make -j
-
+%define version %(ntopng --version | grep 'Version:' | awk {'print$2'})
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -61,7 +61,7 @@ cp -r ntopng/httpdocs %{buildroot}/usr/share/ntopng
 cp -LR ntopng/scripts %{buildroot}/usr/share/ntopng
 find %{buildroot}/usr/share/ntopng -name "*~"   | xargs /bin/rm -f
 find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
-ntopng/ntopng --version
+
 
 %files
 /etc/ntopng/ntopng.conf
