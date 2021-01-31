@@ -18,4 +18,4 @@ for IF in $LIST; do
 done
 
 echo Starting ntopng ..
-/usr/local/bin/ntopng /etc/ntopng/ntopng.conf
+/usr/bin/ntopng /etc/ntopng/ntopng.conf

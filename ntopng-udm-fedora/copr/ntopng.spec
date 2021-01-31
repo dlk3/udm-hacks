@@ -17,7 +17,7 @@ Source2:	%{name}.conf
 Source3:	%{name}.service
 Source4:	%{name}.sysconfig
 
-Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, openssl, redis, sqlite, zlib
+Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
 BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
 
