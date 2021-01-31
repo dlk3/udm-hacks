@@ -73,6 +73,19 @@ find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
 /usr/share/ntopng/*
 
 
+%post
+#  Create self-signed SSL certificate
+cd /usr/share/ntopng/httpdocs/ssl
+openssl req -new -x509 -sha1 -extensions v3_ca -nodes -days 3650 -out cert.pem -subj "/O=ntopng container"
+cat privkey.pem cert.pem > ntopng-cert.pem
+
+
+%preun
+#  Delete the files that the %post scriptlet created
+cd /usr/share/ntopng/httpdocs/ssl
+rm privkey.pem cert.pem ntopng-cert.pem
+
+
 %changelog
 * Sat Jan 30 2021 David King <dave@daveking.com>
 	Initial Version
