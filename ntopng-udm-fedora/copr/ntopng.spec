@@ -43,7 +43,9 @@ cd ../%{name}
 ./autogen.sh
 ./configure
 make -j
-%define version %(ntopng --version | grep 'Version:' | awk {'print$2'})
+
+%define version %(ntopng --version | grep 'Version:' | awk {'print $2'})
+echo %{version}
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -75,7 +77,7 @@ find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
 %post
 #  Create self-signed SSL certificate
 cd /usr/share/ntopng/httpdocs/ssl
-openssl req -new -x509 -sha1 -extensions v3_ca -nodes -days 3650 -out cert.pem -subj "/O=ntopng container"
+openssl req -new -x509 -sha1 -extensions v3_ca -nodes -days 3650 -out cert.pem -subj "/O=ntopng container" &>/dev/null
 cat privkey.pem cert.pem > ntopng-cert.pem
 
 
