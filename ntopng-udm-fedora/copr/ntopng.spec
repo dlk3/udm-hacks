@@ -5,7 +5,6 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-Version:	4.3.210131
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -44,8 +43,6 @@ cd ../%{name}
 ./configure
 make -j
 
-%define version %(ntopng --version | grep 'Version:' | awk {'print $2'})
-echo %{version}
 
 %install
 mkdir -p %{buildroot}%{_bindir}
