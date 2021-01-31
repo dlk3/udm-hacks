@@ -53,5 +53,16 @@ docker buildx inspect --bootstrap
 
 ## Build ntopng-udm for an arm64 host, i.e., the UDM
 
-`docker buildx build --platform linux/arm64 -t ntopng-udm:latest --load .`
+From within the folder which contains the Dockerfile:
 
+`docker buildx build --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng:<VERSION_NUMBER> --load .`
+
+## Push ntopng-udm to the Docker registry
+
+Make sure that dlk3/ntopng-udm project exists in the registry.
+```
+docker login
+docker push dlk3/ntopng-udm:latest
+docker push dlk3/ntopng-udm:<VERSION_NUMBER>
+docker logout
+```

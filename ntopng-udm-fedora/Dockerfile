@@ -1,4 +1,4 @@
-FROM fedora:latest
+FROM fedora:32
 
 RUN dnf -y update && \
 	dnf -y install dnf-plugins-core ethtool geoipupdate iproute && \
