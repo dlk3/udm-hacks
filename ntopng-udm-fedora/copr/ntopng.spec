@@ -58,10 +58,10 @@ mkdir -p %{buildroot}/etc/sysconfig/
 install -m 644 %{SOURCE4} %{buildroot}/etc/sysconfig/%{NAME}
 mkdir -p %{buildroot}/usr/share/ntopng
 cp -r ntopng/httpdocs %{buildroot}/usr/share/ntopng
-cp -LR ntopmg/scripts %{buildroot}/usr/share/ntopng
+cp -LR ntopng/scripts %{buildroot}/usr/share/ntopng
 find %{buildroot}/usr/share/ntopng -name "*~"   | xargs /bin/rm -f
 find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
-
+ntopng/ntopng --version
 
 %files
 /etc/ntopng/ntopng.conf
