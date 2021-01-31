@@ -63,7 +63,6 @@ else
 	SOURCE3=$(echo $SOURCE3 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	SOURCE4=$(sed -n 's/^Source4:[[:space:]]*//p' "$SPECFILE")
 	SOURCE4=$(echo $SOURCE4 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
-	ARCH=$(sed -n 's/^BuildArch:[[:space:]]*//p' "$SPECFILE")
 
 	#  Install the BuildRequires packages listed in the spec file
 	PACKAGES=''
@@ -87,6 +86,6 @@ else
 	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"
 
 	#  Test the package installation
-	dnf install -y ${HOME}/rpmbuild/RPMS/$ARCH/${NAME}-${VERSION}-${RELEASE}.*.${ARCH}.rpm
+	# dnf install -y ${HOME}/rpmbuild/RPMS/$ARCH/${NAME}-${VERSION}-${RELEASE}.*.${ARCH}.rpm
 	
 fi
