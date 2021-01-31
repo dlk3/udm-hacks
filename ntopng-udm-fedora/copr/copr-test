@@ -83,9 +83,6 @@ else
 	mv /tmp/copr-test/${SOURCE3} ${HOME}/rpmbuild/SOURCES/
 	mv /tmp/copr-test/${SOURCE4} ${HOME}/rpmbuild/SOURCES/
 	
-	/bin/sh
-	exit
-
 	#  Build the package ...
 	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"
 

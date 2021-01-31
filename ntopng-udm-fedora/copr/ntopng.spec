@@ -31,13 +31,12 @@ can be obtained from the traffic captured by the server.
 
 
 %prep
-%setup
-cd ..
+tar -zxvf %{SOURCE0}
 tar -zxvf %{SOURCE1}
 
 
 %build
-cd ../nDPI
+cd nDPI
 ./autogen.sh
 make -j
 cd ../%{name}
@@ -48,18 +47,18 @@ make -j
 
 %install
 mkdir -p %{buildroot}%{_bindir}
-install -m 755 -t %{buildroot}%{_bindir} ntopng
+install -m 755 -t %{buildroot}%{_bindir} ntopngntopng
 mkdir -p %{buildroot}/usr/man/man8
-install -m 644 -t %{buildroot}/usr/man/man8 ntopng.8
+install -m 644 -t %{buildroot}/usr/man/man8 ntopng/ntopng.8
 mkdir -p %{buildroot}/etc/ntopng
 install -m 644 -t %{buildroot}/etc/ntopng %{SOURCE2}
 mkdir -p %{buildroot}/usr/lib/systemd/system
 install -m 644 -t %{buildroot}/usr/lib/systemd/system %{SOURCE3}
 mkdir -p %{buildroot}/etc/sysconfig/
-install -m 644 %{SOURCE4} %{buildroot}/etc/sysconfig/${NAME}
+install -m 644 %{SOURCE4} %{buildroot}/etc/sysconfig/%{NAME}
 mkdir -p %{buildroot}/usr/share/ntopng
-cp -r httpdocs %{buildroot}/usr/share/ntopng
-cp -LR scripts %{buildroot}/usr/share/ntopng
+cp -r ntopng/httpdocs %{buildroot}/usr/share/ntopng
+cp -LR ntopmg/scripts %{buildroot}/usr/share/ntopng
 find %{buildroot}/usr/share/ntopng -name "*~"   | xargs /bin/rm -f
 find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
 
