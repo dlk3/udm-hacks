@@ -40,11 +40,10 @@ else
 	rm -fr udm-hacks
 	NAME='nDPI'
 	git clone https://github.com/ntop/${NAME}.git
-	tar -czf ${NAME}.tar.gz nDPI
+	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' 'ntopng.spec')
-	VERSION=$(sed -n 's/^Version:[[:space:]]*//p' 'ntopng.spec')
-	git clone git://github.com/ntop/ntopng.git
+	git clone git://github.com/ntop/${NAME}.git
 	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 
@@ -58,11 +57,11 @@ else
 	SOURCE0=$(echo $SOURCE0 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	SOURCE1=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
 	SOURCE1=$(echo $SOURCE1 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
-	SOURCE2=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE2=$(sed -n 's/^Source2:[[:space:]]*//p' "$SPECFILE")
 	SOURCE2=$(echo $SOURCE2 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
-	SOURCE3=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE3=$(sed -n 's/^Source3:[[:space:]]*//p' "$SPECFILE")
 	SOURCE3=$(echo $SOURCE3 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
-	SOURCE4=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE4=$(sed -n 's/^Source4:[[:space:]]*//p' "$SPECFILE")
 	SOURCE4=$(echo $SOURCE4 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	ARCH=$(sed -n 's/^BuildArch:[[:space:]]*//p' "$SPECFILE")
 
@@ -86,7 +85,7 @@ else
 	
 	/bin/sh
 	exit
-	
+
 	#  Build the package ...
 	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"
 
