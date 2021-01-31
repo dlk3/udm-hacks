@@ -1,25 +1,13 @@
-FROM fedora:latest
+FROM debian:buster-slim
 
-RUN dnf -y update
-RUN dnf -y install autoconf automake ethtool expat-devel gcc-c++ git geoipupdate \
-    iproute json-c-devel kernel-devel libcap-devel libcurl-devel libmaxminddb-devel \
-    libpcap-devel libsqlite3x-devel libtool libxml2-devel make mariadb-devel net-tools \
-    openssl openssl-devel pkg-config readline-devel redis rrdtool-devel wget zeromq-devel
-run dnf -y clean all
+COPY entrypoint.sh /entrypoint.sh
+COPY packages/*201206*.deb /tmp/
 
-RUN mkdir /root/src
-RUN cd /root/src && GIT_SSL_NO_VERIFY=1 git clone https://github.com/ntop/nDPI.git && cd nDPI && ./autogen.sh && make -j4
-RUN cd /root/src && GIT_SSL_NO_VERIFY=1 git clone https://github.com/ntop/ntopng && cd ntopng && ./autogen.sh && ./configure && \
-    openssl req -new -x509 -sha1 -extensions v3_ca -nodes -days 3650 -out httpdocs/ssl/cert.pem -subj "/c=US/ST=All/O=Unifi UDM Users" && \
-    cat privkey.pem httpdocs/ssl/cert.pem > httpdocs/ssl/ntopng-cert.pem && \
-    make install -j4
-RUN rm -fr /root/src
+RUN apt-get update && apt-get --no-install-recommends -y install libsqlite3-0 libexpat1 redis-server librrd8 logrotate libcurl4 libpcap0.8 libldap-2.4-2 libhiredis0.14 \
+            libssl1.1 libmariadbd19 lsb-release tar ethtool libcap2 bridge-utils libnetfilter-conntrack3 libzstd1 libmaxminddb0 \
+            libradcli4 libjson-c3 libsnmp30 udev libzmq5 libcurl3-gnutls net-tools curl procps && rm -rf /var/lib/apt/lists/* \
+        && curl -Lo /tmp/geoipupdate_2.3.1-1_arm64.deb  http://ftp.us.debian.org/debian/pool/contrib/g/geoipupdate/geoipupdate_2.3.1-1_arm64.deb \
+        && dpkg -i /tmp/*.deb && rm /tmp/*.deb \
+        && echo "-i=br0\n-n=1\n-W=3001" >> /etc/ntopng/ntopng.conf && chmod +x /entrypoint.sh
 
-EXPOSE 3000/tcp
-EXPOSE 3001/tcp
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT entrypoint.sh
-
-LABEL maintainer="David King dave@daveking.com"
+ENTRYPOINT ["/entrypoint.sh"]

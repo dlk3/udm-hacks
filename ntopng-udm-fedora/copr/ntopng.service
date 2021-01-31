@@ -1,0 +1,14 @@
+[Unit]
+Description=ntopng Network Traffic Analyser
+Requires=redis.service
+After=syslog.target network.target redis.service
+
+[Service]
+EnvironmentFile=/etc/sysconfig/ntopng
+ExecStart=/usr/bin/ntopng $OPTIONS
+Restart=always
+RestartSec=30
+TimeoutStopSecs=10s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,42 +1,39 @@
-# Running ntopng On The Unifi Ultimate Dream Machine (UDM)
+# ntopng for UDM/UDM pro
 
-This container image can be used to run the ntopng network traffic flow analysis tool on a Unifi Ultimate Dream Machine.  
+## Distributed under MIT license
 
-This project was inspired by Carlos Talbot's  [tusc/ntopng-udm project](https://github.com/tusc/ntopng-udm).  This container differs in the following ways:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-1. A Fedora container is used, because I like being on the semi-bleeding edge.
-2. The libcap-supported features of ntopng are compiled in, including network discovery.
-3. A more up-to-date version of the geoipupdate tool is used.
-4. The start-up process for the container has been modified so that startup will not loop endlessly when the GeoIP.conf file causes an error.
-5. The podman run command in this documentation has been fixed so that the ntopng configuration data stored in the redis DB will be persisted through container updates and restarts
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-# Running The Container On The UDM
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Creating the ntopng persistent data directories
+## Project Notes
+**Author:** Carlos Talbot (@tusc69 on ubnt forums)
 
-Access the UDM as the root user via ssh.  You will be placed into the system's root directory.  The runtime environment for the container can be established by entering the following commands.
+# Installing
+
+This is a prebuilt image of ntopng to run directly on an UDM or UDM PRO. The Docker image has been configured to perserve data between upgrades. ntopng uses an in memory database known as redis so writes to disk are minimal. In addition, the timeseries database (RRD) does not require much disk space. https://www.ntop.org/ntopng/ntopng-disk-requirements-for-timeseries-and-flows/. You can optionally configure the timeseries database to point to an external Influx database.
+
+In order to install this image you will need to log into the UDM via ssh and type the following command:
+
+```
+podman pull tusc/ntopng-udm:latest
+```
+This will download the latest image to the UDM.
+
+Next, we'll need to create two directories and download config files that will be saved between upgrades. This is a one time operation.
 
 ```
 mkdir -p /mnt/data/ntopng/redis
 mkdir -p /mnt/data/ntopng/lib
-curl -Lo /mnt/data/ntopng/GeoIP.conf https://github.com/dlk3/udm-hacks/raw/master/ntopng-udm/data/ntopng/GeoIP.conf
-curl -Lo /mnt/data/ntopng/ntopng.conf https://github.com/dlk3/udm-hacks/raw/master/ntopng-udm/data/ntopng/ntopng.conf
-curl -Lo /mnt/data/ntopng/redis.conf https://github.com/dlk3/udm-hacks/blob/master/ntopng-udm/data/ntopng/redis.conf
+touch /mnt/data/ntopng/GeoIP.conf
+curl -Lo /mnt/data/ntopng/ntopng.conf https://github.com/tusc/ntopng-udm/blob/master/ntopng/ntopng.conf?raw=true
+curl -Lo /mnt/data/ntopng/redis.conf https://github.com/tusc/ntopng-udm/blob/master/ntopng/redis.conf?raw=true
 ```
 
-## Enabling GeoIP support
+Next, we want to create a container with ntopng running on https port 3001 using this image with the above config files.
 
-If you want GeoIP support, i.e., you want country flags displayed next to the hosts and IP addresses in the ntopng user interface, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account and register for an API key.  These values must be placed into the /mnt/data/ntopng/GeoIP.conf file in the container's data directory.  
-
-## Installing The Container
-
-Run this command to copy the container onto the UDM:
-
-`podman pull dlk3/ntopng-udm:latest`
- 
-## Running the container
-
-Run this command to start the container:
 ```
 podman run -d --net=host --restart always \
    --name ntopng \
@@ -44,14 +41,93 @@ podman run -d --net=host --restart always \
    -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /mnt/data/ntopng/lib:/var/lib/ntopng \
-   -v /mnt/data/ntopng/redis:/var/lib/redis \
-   ntopng-udm:latest
+   docker.io/tusc/ntopng-udm:latest
+````
+NOTE: If you prefer to use the external drive on the UMD pro to store the persistent data you can use the following to start up ntopng. Make sure to replace all references above from /mnt/data to /mnt/data_ext:
+
 ```
-## Accessing ntopng
+podman run -d --net=host --restart always \
+   --name ntopng \
+   -v /mnt/data_ext/ntopng/GeoIP.conf:/etc/GeoIP.conf \
+   -v /mnt/data_ext/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
+   -v /mnt/data_ext/ntopng/redis.conf:/etc/redis/redis.conf \
+   -v /mnt/data_ext/ntopng/lib:/var/lib/ntopng \
+   docker.io/tusc/ntopng-udm:latest
+```
 
-Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: hppts://192.168.1.1:3001
+Open a web browser page to your UDM's ip address with port 3001 at the end using https. For example: https://192.168.1.1:3001
 
-In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
 
-The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
+If you have to reboot the UDM you'll have to restart the container. You can do so by typing the following:
 
+```
+podman start ntopng
+```
+Fortunately you can also take advantage of boostchicken's great tool to automatically start a Docker container after a reboot:
+https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script
+
+If you're interested in compiling your own version I have a Dockerfile available here that compiles ntopng from source: https://github.com/tusc/ntopng-udm/blob/master/source/Dockerfile
+
+# GeoIP integration
+
+If you want to see country flags next to hosts you'll need to setup a free account with maxmind.com. Follow the instructions from the link below and save the downloaded GeoIP.conf file on the UDM in the path /mnt/data/ntopng/GeoIP.conf. You can use scp or winscp to transfer the file over.  https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md#using-geolocation-in-ntopng. Step 0 (geoipudate) has been done for you as it's included in this image.<br/>
+
+When prompted on the version of geoipupdate select the option for older than 3.1.1.
+
+Once you are done you can start the container. Anytime the docker container is started it will run a geoipupdate to download the latest GeoIP data.
+
+# Customize settings
+
+The default instance will listen on the LAN interface (br0). You can edit the file /mnt/data/ntopng/ntopng.conf on the UDM to change the settings. The default is -i=br0 (LAN), n=1 ( Decode DNS responses and resolve all numeric IPs ) and -W3001 (enable HTTPS port)
+
+**NOTE** If you comment out the -i interface and let ntopng startup listening to all interfaces you will have to wait up to 30 seconds for all interfaces to register. This will also consume additional CPU and memory resources so be careful with this option.
+
+You can also customize the settings for the redis database if you want to eliminates database saves to storage. That file is located at /mnt/data/ntopng/redis.conf
+
+# Disable Redis
+If you want to disable Redis and use an external server just set the env var "DISABLE_REDIS"
+```
+docker run -e DISABLE_REDIS=true tusc/ntopng-udm
+```
+## Building
+Build on your UDM or build on another device using buildx and targeting arm64
+```
+docker buildx build --platform linux/arm64 -t ntopng-udm:latest --load .
+```
+# Upgrades
+
+Whenever there is a new version of ntopng you can easily perform an upgrade by doing the following commands:
+
+```
+podman pull tusc/ntopng-udm:latest
+podman stop ntopng
+podman rm ntopng
+podman run -d --net=host --restart always \
+   --name ntopng \
+   -v /mnt/data/ntopng/GeoIP.conf:/etc/GeoIP.conf \
+   -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
+   -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
+   -v /mnt/data/ntopng/lib:/var/lib/ntopng \
+   docker.io/tusc/ntopng-udm:latest
+```
+
+# Uninstalling
+
+To remove the docker instance and image you'll need to type the following at the UDM ssh prompt:
+
+
+```
+podman stop ntopng
+podman rm ntopng
+podman rmi docker.io/tusc/ntopng-udm  (or "docker rmi ntopng-image" if you installed the first release)
+```
+
+# Console Lockout
+
+If for whatever reason you find yourself locked out of the ntopng login prompt you can follow the steps on this page for resetting the password:
+https://www.ntop.org/guides/ntopng/faq.html#cannot-login-into-the-gui
+
+You have to connect to the containter in order to run the redis commands as referenced in the FAQ. Do so by typing the following below. You can type "exit" to get out of the container when you're done.
+```
+podman exec -it ntopng bash
+```

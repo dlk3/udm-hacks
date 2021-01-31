@@ -1,0 +1,93 @@
+#!/usr/bin/env sh
+
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+set -e
+
+if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
+
+	podman run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")"
+	
+else
+
+	#  Make the container look like a COPR environment
+	#dnf install -y --nogpgcheck https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+	#dnf install -y dnf-plugins-core
+	#dnf config-manager --enable PowerTools
+	dnf groupinstall -y "Development Tools" "RPM Development Tools"
+	dnf install -y rpm-build
+	dnf upgrade -y
+	mkdir -p ${HOME}/rpmbuild/BUILD
+	mkdir -p ${HOME}/rpmbuild/BUILDROOT
+	mkdir -p ${HOME}/rpmbuild/RPMS
+	mkdir -p ${HOME}/rpmbuild/SOURCES
+	mkdir -p ${HOME}/rpmbuild/SPECS
+	mkdir -p ${HOME}/rpmbuild/SRPMS
+	mkdir /tmp/copr-test
+	cd /tmp/copr-test
+
+	#  COPR: Installing packages required by the custom script
+	dnf install -y wget git
+	
+	#  COPR: The custom script that gets/creates the sources and the spec file
+	git clone https://github.com/dlk3/udm-hacks.git
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.spec .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.conf .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.service .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng .
+	rm -fr udm-hacks
+	NAME='nDPI'
+	wget https://github.com/ntop/${NAME}.git
+	tar -czf ${NAME}.tar.gz nDPI
+	rm -fr ${NAME}
+	NAME=$(sed -n 's/^Name:[[:space:]]*//p' 'ntopng.spec')
+	VERSION=$(sed -n 's/^Version:[[:space:]]*//p' 'ntopng.spec')
+	git clone git://github.com/ntop/ntopng.git
+	tar -czf ${NAME}-${VERSION}.tar.gz ${NAME}-${VERSION}
+	rm -fr ${NAME}-${VERSION}
+
+	#  Parse the package name, version, release, sources and architecture
+	#  out of the spec file
+	SPECFILE="opentracker.spec"
+	NAME=$(sed -n 's/^Name:[[:space:]]*//p' "$SPECFILE")
+	VERSION=$(sed -n 's/^Version:[[:space:]]*//p' "$SPECFILE")
+	RELEASE=$(sed -n 's/^Release:[[:space:]]*//;s/%{?dist}//p' "$SPECFILE")
+	SOURCE0=$(sed -n 's/^Source0:[[:space:]]*//p' "$SPECFILE")
+	SOURCE0=$(echo $SOURCE0 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE1=$(sed -n 's/^Source1:[[:space:]]*//p' "$SPECFILE")
+	SOURCE1=$(echo $SOURCE1 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE2=$(sed -n 's/^Source2:[[:space:]]*//p' "$SPECFILE")
+	SOURCE2=$(echo $SOURCE2 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE3=$(sed -n 's/^Source2:[[:space:]]*//p' "$SPECFILE")
+	SOURCE3=$(echo $SOURCE2 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	SOURCE4=$(sed -n 's/^Source2:[[:space:]]*//p' "$SPECFILE")
+	SOURCE4=$(echo $SOURCE2 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	ARCH=$(sed -n 's/^BuildArch:[[:space:]]*//p' "$SPECFILE")
+
+	#  Install the BuildRequires packages listed in the spec file
+	PACKAGES=''
+	oIFS=$IFS
+	IFS=$'\n'
+	for LINE in `grep ^BuildRequires: $SPECFILE`; do 
+		PACKAGES+=`echo $LINE | cut -f2`" "
+	done
+	IFS=$oIFS
+	[ "$PACKAGES" != "" ] && dnf install -y $PACKAGES
+	
+	#  Move the source files into place in the ${HOME}/rpmbuild tree
+	mv /tmp/copr-test/${SPECFILE} ${HOME}/rpmbuild/SPECS/
+	mv /tmp/copr-test/${SOURCE0} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE1} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE2} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE3} ${HOME}/rpmbuild/SOURCES/
+	mv /tmp/copr-test/${SOURCE4} ${HOME}/rpmbuild/SOURCES/
+
+	#  Build the package ...
+	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"
+
+	#  Test the package installation
+	dnf install -y ${HOME}/rpmbuild/RPMS/$ARCH/${NAME}-${VERSION}-${RELEASE}.*.${ARCH}.rpm
+	
+fi
