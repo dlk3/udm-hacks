@@ -1,4 +1,5 @@
 Hacks in this repository:
 
-ntopng-udm - run the ntopng network traffic flowe monitor in a podman container on the UDM
-ntopng-udm-fedora - a failed attempt to replatform ntopng-udm in a Fedora container.  The redis server abends in this container.
+ntopng-udm-fedora - Run the ntopng Network Traffic Monitoring tool on the UDM.  This is my recreation of [tusc's ntopng-udm podman container](https://github.com/tusc/ntopng-udm) using Fedora and including a number of "improvements."
+
+on_boot.d - the scripts I use with boostchicken's [on-boot-script utility](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) to do custom setup when the UDM reboots.
