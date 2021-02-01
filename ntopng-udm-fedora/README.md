@@ -87,3 +87,13 @@ In this container ntopng is configured with a self-signed SSL certificate for HT
 
 The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
 
+## What to do when you forget your ntopng password
+
+1. Access the command shell inside the ntopng container with this command:<br /><br />`podman exec -it ntopng /bin/sh`
+
+2. Issue this command to delete the admin password from the redis db:<br /><br />`redis-cli del ntopng.user.admin.password`  
+
+3. Exit the ntopng container shell with the `exit` command or by pressing Ctrl-D.
+4. Restart the container with these commands:<br /><br />`podman stop ntopng`<br />`podman start ntopng`  
+
+5.  When you reconnect your browser you will be able to login using the default `admin` userid and `admin` password, which you will promptly be prompted to change.
