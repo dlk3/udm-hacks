@@ -38,7 +38,7 @@ Run this command to start the container:
 ```
 podman run -d --net=host --privileged=true --restart always --name ntopng \
    -v /mnt/data/ntopng/GeoIP.conf:/etc/GeoIP.conf \
-   -v /mnt/data/ntopng/ntopng.conf:/etc/ntopngVIDEO_TS/ntopng.conf \
+   -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /mnt/data/ntopng/lib:/var/lib/ntopng \
    -v /mnt/data/ntopng/redis:/var/lib/redis \
