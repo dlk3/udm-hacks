@@ -81,7 +81,7 @@ rm -fr /mnt/data/ntopng
 ```
 ## Accessing ntopng
 
-Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: hppts://192.168.1.1:3001
+Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: https://192.168.1.1:3001
 
 In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
 
