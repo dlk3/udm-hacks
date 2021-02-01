@@ -7,8 +7,10 @@ This project was inspired by Carlos Talbot's  [tusc/ntopng-udm project](https://
 1. A Fedora container is used, because I like being on the semi-bleeding edge.
 2. Network Discovery is compiled in, i.e., the libcap library is included.
 3. An up-to-date version of the geoipupdate tool is used.
-4. The start-up process for the container has been modified so that startup will not loop endlessly, blocking startup, when the GeoIP.conf file has errors..
-5. The  run command in this documentation has been fixed so that the ntopng configuration data stored in the redis DB is actually persisted through UDM updates and restarts
+4. The start-up process for the container has been modified so that startup will not loop endlessly, blocking startup, when the GeoIP.conf file has errors.
+5. An `ethtool` command was added to the startup process to turn off oversized packet handling per the ntopng log.
+6. The  run command in this documentation has been fixed so that the ntopng configuration data stored in the redis DB is actually persisted through UDM updates and restarts.
+7. The run command in this documentation has been updated to include the `--privileged=true` option.  This gives the commands running inside the container the same access to system devices and files they would have if they were running natively on the UDM, under the root userid.  This fixes a couple of errors seen in the logs.
 
 # Running The Container On The UDM
 
