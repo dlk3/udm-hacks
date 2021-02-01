@@ -24,7 +24,7 @@ curl -Lo /mnt/data/ntopng/redis.conf https://github.com/dlk3/udm-hacks/raw/maste
 ```
 ## Enabling GeoIP support
 
-If you want GeoIP support, i.e., you geo maps of hosts sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /mnt/data/ntopng/GeoIP.conf file.
+If you want GeoIP support, i.e., you want geo maps of hosts sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /mnt/data/ntopng/GeoIP.conf file.
 
 ## Installing The Container
 
