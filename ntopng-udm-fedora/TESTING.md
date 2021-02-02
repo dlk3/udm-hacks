@@ -43,6 +43,7 @@ sudo podman run -d --net=host --privileged --restart always --name ntopng \
    -v /tmp/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /tmp/ntopng/lib:/var/lib/ntopng \
    -v /tmp/ntopng/redis:/var/lib/redis \
+   -v /etc/localtime:/etc/localtime:ro \
    ntopng-udm:latest
 ```
 

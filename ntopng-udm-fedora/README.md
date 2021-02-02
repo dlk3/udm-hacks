@@ -46,6 +46,7 @@ podman run -d --net=host --privileged --restart always --name ntopng \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /mnt/data/ntopng/lib:/var/lib/ntopng \
    -v /mnt/data/ntopng/redis:/var/lib/redis \
+   -v /etc/localtime:/etc/localtime:ro \
    ntopng-udm:latest
 ```
 Remember to use `/mnt/data_ext` as the root for the directories if you are keeping the application data on the UDM's secondary disk.
@@ -68,6 +69,7 @@ In this container ntopng is configured with a self-signed SSL certificate for HT
 
 The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
 
+
 ## Upgrading the container
 
 Use these commands to upgrade the ntopng-udm to the latest release:
@@ -82,6 +84,7 @@ podman run -d --net=host --privileged --restart always --name ntopng \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
    -v /mnt/data/ntopng/lib:/var/lib/ntopng \
    -v /mnt/data/ntopng/redis:/var/lib/redis \
+   -v /etc/localtime:/etc/localtime:ro \
    ntopng-udm:latest
 ```
 Remember to use `/mnt/data_ext` as the root for the directories if you are keeping the application data on the UDM's secondary disk.
