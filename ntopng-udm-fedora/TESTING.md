@@ -37,7 +37,7 @@ If you want GeoIP support, i.e., you want geo maps of hosts sending and receivin
 
 This command starts ntopng running within its container:
 ```
-sudo podman run -d --net=host --privileged=true --restart always --name ntopng \
+sudo podman run -d --net=host --privileged --restart always --name ntopng \
    -v /tmp/ntopng/GeoIP.conf:/etc/GeoIP.conf \
    -v /tmp/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /tmp/ntopng/redis.conf:/etc/redis/redis.conf \

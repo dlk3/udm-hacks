@@ -38,7 +38,7 @@ Run this command to copy the container from the Docker repository onto the UDM:
 
 Run this command to start the container:
 ```
-podman run -d --net=host --privileged=true --restart always --name ntopng \
+podman run -d --net=host --privileged --restart always --name ntopng \
    -v /mnt/data/ntopng/GeoIP.conf:/etc/GeoIP.conf \
    -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
@@ -64,7 +64,7 @@ podman stop ntopng
 podman rm ntopng
 podman rmi ntopng-udm
 podman pull dlk3/ntopng-udm:latest
-podman run -d --net=host --privileged=true --restart always --name ntopng \
+podman run -d --net=host --privileged --restart always --name ntopng \
    -v /mnt/data/ntopng/GeoIP.conf:/etc/GeoIP.conf \
    -v /mnt/data/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
    -v /mnt/data/ntopng/redis.conf:/etc/redis/redis.conf \
