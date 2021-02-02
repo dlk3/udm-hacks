@@ -69,6 +69,13 @@ In this container ntopng is configured with a self-signed SSL certificate for HT
 
 The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
 
+## Viewing the ntopng log
+
+```
+podman logs ntopng
+```
+
+This command, when entered at the UDM's command prompt, will display the contents of the podman container's console log.  This will include any messages from the ntopng startup process and can be useful when troublshooting startup problems.
 
 ## Upgrading the container
 
