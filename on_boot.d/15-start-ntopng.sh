@@ -16,5 +16,6 @@ if [ $? -eq 125 ]; then
        -v /mnt/data_ext/ntopng/redis.conf:/etc/redis/redis.conf \
        -v /mnt/data_ext/ntopng/lib:/var/lib/ntopng \
        -v /mnt/data_ext/ntopng/redis:/var/lib/redis \
+       -v /etc/localtime:/etc/localtime:ro \
        ntopng-udm:latest
 fi
