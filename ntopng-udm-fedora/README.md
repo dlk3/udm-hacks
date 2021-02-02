@@ -60,6 +60,14 @@ To start ntopng:
 
 You will need to do this start command each time the UDM is rebooted or upgraded.  (The ntopng-udm container and its data will survive a UDM firmward update.)  To perform this task automatically at boot time take a look at John D's [on-boot-script project](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) on GitHub for a tool that can help you do that.
 
+## Accessing ntopng
+
+Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: https://192.168.1.1:3001
+
+In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
+
+The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
+
 ## Upgrading the container
 
 Use these commands to upgrade the ntopng-udm to the latest release:
@@ -88,14 +96,6 @@ podman rmi ntopng-udm
 rm -fr /mnt/data/ntopng
 ```
 If you have been keeping the application data on the UDM's secondary disk, then use the command `rm -fr /mnt/data_ext/ntopng` as the final step in this process.
-
-## Accessing ntopng
-
-Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: https://192.168.1.1:3001
-
-In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
-
-The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
 
 ## What to do when you forget your ntopng password
 
