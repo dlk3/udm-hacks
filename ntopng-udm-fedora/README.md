@@ -105,6 +105,6 @@ If you have been keeping the application data on the UDM's secondary disk, then 
 
 3. Exit the ntopng container shell with the `exit` command or by pressing Ctrl-D.
 
-4. Restart the container with these commands:<br /><br />`podman stop ntopng`<br />`podman start ntopng`  
+4. Restart the container with this command:<br /><br />`podman restart ntopng`  
 
-5.  When you reconnect your browser you will be able to login using the default `admin` userid and `admin` password, which you will promptly be prompted to change.
+5. When you reconnect your browser you will be able to login using the default `admin` userid and `admin` password, which you will promptly be prompted to change.
