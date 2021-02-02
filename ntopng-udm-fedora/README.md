@@ -87,6 +87,8 @@ podman rm ntopng
 podman rmi ntopng-udm
 rm -fr /mnt/data/ntopng
 ```
+If you have nee keeping the application data on the UDM's secondary disk, then use the command `rm -fr /mnt/data_ext/ntopng` as the final step in this process.
+
 ## Accessing ntopng
 
 Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: https://192.168.1.1:3001
@@ -98,10 +100,6 @@ The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/
 ## What to do when you forget your ntopng password
 
 1. Access the command shell inside the ntopng container with this command:<br /><br />`podman exec -it ntopng /bin/sh`
-
-2. Issue this command to stop the ntopng application inside the container: `killall ntopng`
-
-3.
 
 2. Issue this command to delete the admin password from the redis db:<br /><br />`redis-cli del ntopng.user.admin.password`  
 
