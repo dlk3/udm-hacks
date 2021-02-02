@@ -87,7 +87,7 @@ podman rm ntopng
 podman rmi ntopng-udm
 rm -fr /mnt/data/ntopng
 ```
-If you have nee keeping the application data on the UDM's secondary disk, then use the command `rm -fr /mnt/data_ext/ntopng` as the final step in this process.
+If you have been keeping the application data on the UDM's secondary disk, then use the command `rm -fr /mnt/data_ext/ntopng` as the final step in this process.
 
 ## Accessing ntopng
 
