@@ -55,7 +55,7 @@ docker buildx inspect --bootstrap
 
 From within the folder which contains the Dockerfile:
 
-`docker buildx build --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:<VERSION_NUMBER> --load .`
+`docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:<VERSION_NUMBER> --load .`
 
 ## Push ntopng-udm to the Docker registry
 
