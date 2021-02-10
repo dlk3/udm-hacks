@@ -17,5 +17,6 @@ if [ $? -eq 125 ]; then
        -v /mnt/data_ext/ntopng/lib:/var/lib/ntopng \
        -v /mnt/data_ext/ntopng/redis:/var/lib/redis \
        -v /etc/localtime:/etc/localtime:ro \
+       -v /mnt/data_ext/ntopng/ssl/ntopng-cert.pem:/usr/share/ntopng/httpdocs/ssl/ntopng-cert.pem \
        ntopng-udm:latest
 fi

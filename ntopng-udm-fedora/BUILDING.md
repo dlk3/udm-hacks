@@ -38,13 +38,15 @@ Change the permission to execute:
 
 See https://github.com/docker/buildx/#installing for details.
 
-## Install the multiplatform images
+## Install the multiplatform support
 
-Add multiplatform build images:
+Start the docker/binfmt container running to add QEMU support to Docker.  This needs to be done after every system reboot or Docker service restart.
 
-`docker run --rm --privileged docker/binfmt:820fdd95a9972a5308930a2bdfb8573dd4447ad3`
+`docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64`
 
-Create a new builder node:
+**Note:** Check to be sure that this is the latest release of the docker/binfmt container at https://hub.docker.com/r/docker/binfmt/tags?page=1&ordering=last_updated
+
+## Create a new builder node
 ```
 docker buildx create --name mybuilder
 docker buildx use mybuilder
@@ -53,11 +55,13 @@ docker buildx inspect --bootstrap
 
 ## Build ntopng-udm for an arm64 host, i.e., the UDM
 
-From within the folder which contains the Dockerfile:
+From within the folder which contains the Dockerfile and the other source files:
 
 `docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:<VERSION_NUMBER> --load .`
 
-## Push ntopng-udm to the Docker registry
+**Note:** Change `--load` to `--push` to push the container directly to the Docker registry after the build completes, thereby skipping the step below.  In this case you must login to the registry before starting the build.
+
+## Push ntopng-udm to the Docker registry by hand
 
 Make sure that dlk3/ntopng-udm project exists in the registry.
 ```
@@ -66,3 +70,6 @@ docker push dlk3/ntopng-udm:latest
 docker push dlk3/ntopng-udm:<VERSION_NUMBER>
 docker logout
 ```
+## Clean up after yourself
+
+`docker buildx prune --all`
