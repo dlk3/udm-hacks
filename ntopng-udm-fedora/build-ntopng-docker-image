@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+LOGFILE="/tmp/$(basename $0).log"
+DOCKER_PASSWORD=''
+
+#  So that we only get output from this when there's an error while it's
+#  running in crontab.  Otherwise, on success, there's no output.
+#  This is kind of like "set -e" but it prints the log file before exiting. 
+function showlog () {
+    RC=$?
+    cat "$LOGFILE"
+    exit $RC
+}
+trap showlog ERR
+
+#  Perform RPM package build in COPR
+copr-cli build-package --name ntopng dlk/rpms &>"$LOGFILE" 
+
+#  Get the version number from the COPR RPM
+VERSION=$( copr-cli get-package --name ntopng --with-latest-succeeded-build dlk/rpms | jq .latest_succeeded_build.source_package.version | sed 's/"//g;s/\([^-]*\)-.*$/\1/' )
+if [ -z "$VERSION" ]; then
+    echo "Unable to get version number from COPR build" >>"$LOGFILE"
+    cat "$LOGFILE"
+    exit 1
+fi
+
+#  Build the Docker container and push it to the registry
+sudo systemctl start docker &>>"$LOGFILE"
+sudo docker run --rm docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64 &>>"$LOGFILE"
+cd ~/src/udm-hacks/ntopng-udm-fedora &>>"$LOGFILE"
+echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin &>>"$LOGFILE"
+docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:$VERSION --push . &>>"$LOGFILE"
+docker logout &>>"$LOGFILE"
+docker buildx prune --all --force &>>"$LOGFILE"
+
