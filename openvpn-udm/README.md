@@ -15,13 +15,13 @@ I haven't tested it, but I assume that OpenVPN cannot be used in server mode at 
 
 # Security Caveat
 
-This process requires some additions to the <code>iptables</code> rules that the UDM uses to protect a network behind a firewall.  While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures in the iptables rules changes I describe below.  I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.
+This process requires some additions to the <code>iptables</code> rules that the UDM uses to protect a network behind a firewall.  While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures in the iptables rules changes I describe below.  Fair warning, ok?  Do not do any of this if your UDM protects a critical network.  I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.
 
 ## Install EasyRSA
 
-EasyRSA is a tool that the OpenVPN development team has created to make the process of creating the PKI (public key infrastructure) associated with OpenVPN simpler.  This PKI is where I will create, store and manage all of the certificates, keys and configuration files for my OpenVPN server and clients.  
+EasyRSA is a tool that the OpenVPN development team has created to make the process of creating the PKI (public key infrastructure) associated with OpenVPN simpler.  This PKI is where I create, store and manage all of the certificates, keys and configuration files for my OpenVPN server and clients.  
 
-EasyRSA is available in the OpenVPN GitHub repository at (https://github.com/OpenVPN/easy-rsa/releases/latest).  I will download and install the latest <code>EasyRSA-*.tgz</code> file found there into a persistent directory on my UDM.
+EasyRSA is available in the OpenVPN GitHub repository at (https://github.com/OpenVPN/easy-rsa/releases/latest).  I downloaded and installed the latest <code>EasyRSA-*.tgz</code> file found there into a persistent directory on my UDM.
 
 After connecting to my UDM via ssh, I installed EasyRSA with these commands:
 ```
