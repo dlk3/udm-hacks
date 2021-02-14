@@ -39,11 +39,11 @@ else
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.sysconfig .
 	rm -fr udm-hacks
 	NAME='nDPI'
-	git clone https://github.com/ntop/${NAME}.git --branch 3.4
+	git clone https://github.com/ntop/${NAME}.git
 	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' 'ntopng.spec')
-	git clone git://github.com/ntop/${NAME}.git --branch 4.2
+	git clone git://github.com/ntop/${NAME}.git
 	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 
