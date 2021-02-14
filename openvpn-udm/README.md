@@ -1,6 +1,6 @@
-# Configuring An OpenVPN Server On A Unifi Dream Machine
+# Configuring An OpenVPN Server On A Unifi Dream Machine Pro
 
-The Unifi Dream Machine (UDM) comes with OpenVPN software installed on it.  The UDM's administrative UI can configure UDM's OpenVPN to create a point-to-point VPN connection between two machines.  It cannot configure OpenVPN as a VPN server providing access from the public internet into the local LAN.  This can be done manually, however, in a manner that will persist through UDM firmware upgrades and reboots.
+The Unifi Dream Machine Pro (UDM) comes with OpenVPN software installed on it.  The UDM's administrative UI can configure UDM's OpenVPN to create a point-to-point VPN connection between two machines.  It cannot configure OpenVPN as a VPN server providing access from the public internet into the local LAN.  This can be done manually, however, in a manner that will persist through UDM firmware upgrades and reboots.
 
 The major steps in this process are:
 
