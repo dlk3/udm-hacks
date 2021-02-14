@@ -26,7 +26,7 @@ fi
 
 #  Build the Docker container and push it to the registry
 sudo systemctl start docker &>>"$LOGFILE"
-sudo docker run --rm docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64 &>>"$LOGFILE"
+sudo docker run --privileged --rm docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64 &>>"$LOGFILE"
 cd ~/src/udm-hacks/ntopng-udm-fedora &>>"$LOGFILE"
 echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin &>>"$LOGFILE"
 docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:$VERSION --push . &>>"$LOGFILE"

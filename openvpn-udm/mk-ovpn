@@ -1,0 +1,61 @@
+#!/usr/bin/env sh
+
+OPENVPN_SERVER='snaggy.duckdns.org'
+
+FPATH="/mnt/data/openvpn"
+
+if [ -z "$1" ] || [ "$1" == "-h" ]; then
+   echo "Create new OpenVPN configuration file for client:"
+   echo "    $0 client-name [openvpn-server-hostname]"
+   echo "Delete existing client configuration files and PKI certificates:"
+   echo "    $0 -d client-name"
+   exit 1
+fi
+if [ "$1" == "-d" ]; then
+    [ -z "$2" ] && echo "Client name was not provided" && exit 1
+    rm "${FPATH}/${2}.ovpn" &>/dev/null
+    rm "${FPATH}/server/pki/${2}.creds" &>/dev/null
+    rm "${FPATH}/server/pki/issued/${2}.crt" &>/dev/null
+    rm "${FPATH}/server/pki/private/${2}.key" &>/dev/null
+    rm "${FPATH}/server/pki/reqs/${2}.req" &>/dev/null
+    exit
+fi
+
+FN="$1"
+[ -z "$2" ] || OPENVPN_SERVER="$2" 
+
+#  Create cert and key for this client, abort script with error messages if this fails
+cd "${FPATH}/server"
+"$FPATH/easyrsa/easyrsa" build-client-full "$FN" nopass inline &>/tmp/easyrsa.log 
+RC=$?
+if [ $RC -ne 0 ]; then
+    cat /tmp/easyrsa.log
+    rm /tmp/easyrsa.log
+    exit $RC
+fi
+
+#  Create client copnfig file containing our set of OpenVPN options
+cat <<__EOF__ >"${FPATH}/${FN}.ovpn"
+dev tun
+proto udp
+remote $OPENVPN_SERVER 1194 
+cipher AES-256-CBC 
+auth SHA1
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+key-direction 1
+client
+verb 3
+
+__EOF__
+#  Append certs inline in the config file
+echo "<tls-auth>" >>"${FPATH}/${FN}.ovpn"
+cat "${FPATH}/server/pki/private/ta.key" >>"/mnt/data/openvpn/${FN}.ovpn"
+echo "</tls-auth>" >>"${FPATH}/${FN}.ovpn"
+
+grep -v -e '^#' "${FPATH}/server/pki/$1.creds" >>"${FPATH}/${FN}.ovpn"
+
+echo "Client config file ready: ${FPATH}/${FN}.ovpn"
