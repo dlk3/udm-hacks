@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-OPENVPN_SERVER='snaggy.duckdns.org'
+OPENVPN_SERVER='MY-UDM.SOMEDDNS.ORG'
 
 FPATH="/mnt/data/openvpn"
 
