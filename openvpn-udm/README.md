@@ -11,25 +11,24 @@ The major steps in this process are:
 5)  Create one or more client configuration files which contain the settings, certificate and key that the client needs to connect to the server.
 6)  Distribute the client configuration file and test connectivity.
 
-I haven't tested it, but I assume that OpenVPN cannot be used in server mode at the same time that it is being used in point-to-point mode.  I assume that any point-to-point configuration done through the admin UI would need to be disbled before doing any of what I'll describe below.
+I haven't tested it, but I assume that OpenVPN cannot be used in server mode at the same time that it is being used in point-to-point mode.  I assume that any point-to-point configuration done through the admin UI would need to be disabled before doing any of what I'll describe below.  But, hey, you never know, I could be totally wrong about this.
 
 ## Install EasyRSA
 
 EasyRSA is a tool that the OpenVPN development team has created to make the process of creating the PKI (public key infrastructure) associated with OpenVPN simpler.  This PKI is where I will create, store and manage all of the certificates, keys and configuration files for my OpenVPN server and clients.  
 
-EasyRSA is available in the OpenVPN GitHub repository at https://github.com/OpenVPN/easy-rsa/releases/latest  I will download and install the latest <code>EasyRSA-*.tgz</code> file found there into a persistent directory on my UDM:
+EasyRSA is available in the OpenVPN GitHub repository at (https://github.com/OpenVPN/easy-rsa/releases/latest).  I will download and install the latest <code>EasyRSA-*.tgz</code> file found there into a persistent directory on my UDM.
 
-After connecting to my UDM via ssh, I install EasyRSA with these commands:
+After connecting to my UDM via ssh, I installed EasyRSA with these commands:
 ```
 mkdir -p /mnt/data/openvpn/easyrsa
-cd /mnt/data/openvpn
 curl -OJL https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
-tar xf EasyRSA-3.0.8.tgz --strip-components=1 -C easyrsa
+tar xf EasyRSA-3.0.8.tgz --strip-components=1 -C /mnt/data/openvpn/easyrsa
 rm EasyRSA-3.0.8.tgz
 ```
 ## Creating OpenVPN server certificates and keys
 
-I will create all of the certificates and keys that the OpenVPN server will need.  The OpenVPN web site has [instructions](https://openvpn.net/community-resources/how-to/#setting-up-your-own-certificate-authority-ca-and-generating-certificates-and-keys-for-an-openvpn-server-and-multiple-clients) for doing this but they are based on a earlier version of EasyRSA.  The EasyRSA commands and their options have changed a little with the release I am using.  Still, the web site is a useful source of additional information on what I'm doing here and why:
+I created all of the certificates and keys that the OpenVPN server will need.  The OpenVPN web site has [instructions](https://openvpn.net/community-resources/how-to/#setting-up-your-own-certificate-authority-ca-and-generating-certificates-and-keys-for-an-openvpn-server-and-multiple-clients) for doing this but they are based on a earlier version of EasyRSA.  The EasyRSA commands and their options have changed a little with the release I am using.  Still, the web site is a useful source of additional information on what I'm doing here and why:
 ```
 mkdir /mnt/data/openvpn/server
 cd /mnt/data/openvpn/server
@@ -45,9 +44,9 @@ The server certificates I created here and the client certificates I'll create l
 
 ## Creating a server configuration file
 
-The server configuration file that I use is **here** in this GitHub project.  It references all of the certificate and key files made in the previous step, using the directory structure and naming conventions assumed there.  See the [OpenVPN documentation.](https://openvpn.net/community-resources/how-to/#creating-configuration-files-for-server-and-clients) for additional information on the server configuration file.
+The [server configuration file](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/server.conf) that I use is in this GitHub project.  It references all of the certificate and key files generated in the previous step, using the directory structure and naming conventions assumed there.  See the [OpenVPN documentation](https://openvpn.net/community-resources/how-to/#creating-configuration-files-for-server-and-clients) for additional information on the server configuration file.
 
-I would direct your attantion to the following lines in my file:
+I would direct your attantion to the following lines in the file:
 ```
 local MY-UDM.SOMEDDNS.ORG
 ```
@@ -55,19 +54,19 @@ This line tells OpenVPN the IP address or the hostname of the WAN network interf
 ```
 server 10.8.0.0 255.255.255.0
 ```
-This is the IP subnet in which my VPN clients are assigned an address by the server.  It needs to be a subnet that isn't in use elsewhere in my home network.  I will need to make sure that this subnet matches the one used in the <code>iptables</code> rules that are in the OpenVPN boot script I'll be creating below.
+This is the IP subnet from which my VPN clients are assigned addresses by the server.  It needs to be a subnet that isn't in use elsewhere in my network.  This subnet needs to match the one used in the <code>iptables</code> rules that are in the OpenVPN boot script I'll be creating below.
 ```
 push "route 192.168.1.0 255.255.255.0"
 ```
-I need to have a line like this for every LAN or VLAN in my home network that I want my clients to be able to access.  I also need to make sure that there's a matching <code>iptables</code> rule in the OpenVPN boot script I'll be creating below.  In my case my clients need to access my main LAN, my other VLANs are off limits to them.
+There needs to be a line like this for every LAN or VLAN in my network that I want my clients to be able to access.  There also needs to be a matching <code>iptables</code> rule in the OpenVPN boot script I'll be creating below.  In my case, my clients only need to access my main LAN.  My other VLANs are off limits to them.
 
 ## Creating a boot script to start the OpenVPN server
 
-I want the OpenVPN server to start automatically every time my UDM boots up.  John "boostchicken" D. has made a great little utility that makes this easy.  Go to his [on-boot-script GitHub repository](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) and follow the very simple instructions there to install it.
+I want the OpenVPN server to start automatically every time my UDM boots up.  John "boostchicken" D. has made a great little utility that makes this easy.  Go to his [on-boot-script GitHub repository](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) and follow the very simple instructions found there to get it installed.
 
-I wrote the 15-openvpn-server.sh script that is found **here** in my GitHub repository to start the OpenVPN server when the UDM boots.  It also configures the <code>iptables</code> firewall rules necessary to allow VPN traffic to flow to and from my OpenVPN clients.
+I wrote the [15-openvpn-server.sh script](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/15-openvpn-server.sh) in this GitHub repository to start the OpenVPN server whenever the UDM boots.  It also configures the <code>iptables</code> firewall rules necessary to allow VPN traffic to flow to and from my OpenVPN clients.  It lives in the <code>/mnt/data/on_boot.d</code> directory used by boostchicken's tool.
 
-Before using this script on a new server the <code>iptables</code> rules that it contains may need to be modified to match any changes made in the server.conf above.  Let's look at some of the rules that get set by the <code>iptables_rules</code> function inside the script:
+Before using this script on a new server the <code>iptables</code> rules that it contains would need to be modified to match that sever's server.conf file.  Let's look at some of the rules that get set by the <code>iptables_rules</code> function inside the script:
 ```
 #  Allow incoming traffic to the OpenVPN port
 /usr/sbin/iptables $1 INPUT -p udp --dport 1194 -m state --state NEW -s 0.0.0.0/0 -j ACCEPT
@@ -84,21 +83,21 @@ I only need my clients to access my main LAN network, which uses the <code>br0</
 # The subnet definition used here must match the that defined in the OpenVPN server.conf
 /usr/sbin/iptables $1 FORWARD -i tun0 -s 10.8.0.0/24 -d 10.8.0.0/24 -j DROP
 ```
-If the <code>server</code> directive in the server configuration file specifies a different subnet beside <code>10.8.0.0 255.255.255.0</code> then I would need to change this rule to match.
+If the <code>server</code> directive in the server configuration file specifies a subnet other than <code>10.8.0.0 255.255.255.0</code> then I would need to change this rule to match.
 
 ### Script command line options
 
-This script can also be used to manually control the OpenVPN server and the <code>iptables</code> rules if that's ever necessary:
+The <code>15-openvpn-server.sh</code> script can also be used to manually control the OpenVPN server and the <code>iptables</code> rules if that's ever necessary:
 
 - Start the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server</code> 
 - Stop the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server stop</code>
-- Delete the iptables rules associated with the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server delete-iptables</code>
+- Delete the iptables rules associated with the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server delete_rules</code>
 
 ## Creating OpenVPN configuration files for clients
 
 I create, store and manage my OpenVPN client configuration files on the UDM using the PKI that I created using EasyRSA when I configured the server.  I have created a script that generates a single <code>*.ovpn</code> file that contains the configuration directives plus the certificates and keys that the client needs to connect.
 
-The <code>mk-ovpn</code> script I use is **here** in my GitHub repository.  I copied it to the <code>/mnt/data/openvpn</code> directory on my UDM.  Now, when I want to create an OpenVPN configuration file for a client I connect to my UDM via ssh and enter:
+The [mk-ovpn](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/mk-ovpn) script I use is in this GitHub repository.  It is in the <code>/mnt/data/openvpn</code> directory on my UDM.  Now, when I want to create an OpenVPN configuration file for a client I connect to my UDM via ssh and enter:
 ```
 /mnt/data/openvpn/mk-ovpn client-name
 ```
@@ -117,10 +116,10 @@ There's more information on managing OpenVPN clients, like revoking access by re
 
 ## Distributing configuration files to clients and testing
 
-The <code>*.ovpn</code> configuration files that I create contain the client's private key.  The file needs to be treated like it was a password allowing access into my network and kept secure as it is distributed to the client machine.
+The <code>*.ovpn</code> configuration files need to be treated like they are passwords allowing open access to the network.  The files need to be kept secure as they are distributed to client machines.
 
-Confiuring and running an OpenVPN client is beyond the scope of this document, so I'll leave that as an exercise for the reader.  I will point out a few things on the UDM which can help with troubleshooting:
+Confiuring and running an OpenVPN client is beyond the scope of this document, so I'll leave that as an exercise for the reader.  I will point out a few things on the UDM which could help with troubleshooting:
 
-* The OpenVPN server writes its log output into the UDM's <code>/var/log/messages</code> file.  The amount of information it writes can be controlled by setting the <code>verb</code> directive in the <code>/mnt/data/openvpn/server/server.conf</code> file.  Setting <code>verb 6</code> is recommended for debugging purposes.  The same change can be made in the client's configuration file to see debugging data at the client.
+* The OpenVPN server writes its log output into the UDM's <code>/var/log/messages</code> file.  The amount of information it writes can be controlled by setting the <code>verb</code> directive in the <code>/mnt/data/openvpn/server/server.conf</code> file.  Setting <code>verb 6</code> is recommended for debugging purposes.  The same change can be made in a client's configuration file to see debugging data at the client end of the connection.
 * The OpenVPN server updates <code>/mnt/data/openvpn/server/openvpn-status.log</code> once every minute with information about currently connected clients.
-* The OpenVPN server uses the <code>/mnt/data/openvpn/server/ipp.txt</code> as way to remember what clients were assigned which addresses in case the server experiences a quick restart.
+* The OpenVPN server uses the <code>/mnt/data/openvpn/server/ipp.txt</code> file to remember what clients were assigned which addresses in case the server experiences a quick restart.
