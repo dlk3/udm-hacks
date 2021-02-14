@@ -9,9 +9,9 @@ The major steps in this process are:
 3)  Create the OpenVPN server configuration file.
 4)  Install a boot script which will start the OpenVPN server whenever the UDM boots.  This script also, very importantly, configures the UDM firewall rules to allow VPN traffic to flow between the server and its clients
 5)  Create one or more client configuration files which contain the settings, certificate and key that the client needs to connect to the server.
-6)  Distribute the client configuration file and test connectivity.
+6)  Distribute the client configuration files and test connectivity.
 
-I haven't tested it, but I assume that OpenVPN cannot be used in server mode at the same time that it is being used in point-to-point mode.  I assume that any point-to-point configuration done through the admin UI would need to be disabled before doing any of what I'll describe below.  But, hey, you never know, I could be totally wrong about this.
+I haven't tested whether OpenVPN cannot be used in server mode at the same time that it is being used in point-to-point mode.  I've never had occasion to use the point-to-point mode so it's never been configured on my UDM.
 
 ## Security Warning
 
@@ -54,7 +54,7 @@ I would direct your attantion to the following lines in the file:
 ```
 local MY-UDM.SOMEDDNS.ORG
 ```
-This line tells OpenVPN the IP address or the hostname of the WAN network interface on the UDM.  This is where OpenVPN will listen for clients that are trying to connect.  I use a hostname from a DynamicDNS service here.  It always stays the same, even when my cable company changes the IP address that my cable modem assigns to the WAN adapter on my UDM.
+This line tells OpenVPN the IP address or the hostname of the WAN network interface on the UDM.  This is where OpenVPN will listen for clients that are trying to connect.  I use a hostname from a free DDNS service here.  It always stays the same, even when my cable company changes the IP address that my cable modem assigns to the WAN adapter on my UDM.
 ```
 server 10.8.0.0 255.255.255.0
 ```
@@ -105,24 +105,24 @@ The [mk-ovpn](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/mk-ovpn)
 ```
 /mnt/data/openvpn/mk-ovpn client-name
 ```
-The output configuration file is written to <code>/mnt/data/openvpn/client-name.ovpn</code>
+The output configuration file is written to <code>/mnt/data/openvpn/client-name.ovpn</code>.  I move this file to the client machine.
 
-These additional files are generated in the PKI to manage this client's certificate and private key:
+These additional files are generated in the PKI to manage this client's certificate and private key.  They remain on the UDM:
 ```
 /mnt/data/openvpn/server/pki/private/client-name.key
 /mnt/data/openvpn/server/pki/client-name.creds
 /mnt/data/openvpn/server/pki/reqs/client-name.req
 /mnt/data/openvpn/server/pki/issued/client-name.crt
 ```
-To use my script with a different OpenVPN server, the <code>OPENVPN_SERVER</code> variable at the top of the script would need to be set to be the hostname or IP address of the WAN interface on that UDM.
+To use my script with a different OpenVPN server, the <code>OPENVPN_SERVER</code> variable at the top of the script needs to be set to be the hostname or IP address of the WAN interface on that UDM.
 
-There's more information on managing OpenVPN clients, like revoking access by revoking certificates, in the [OpenVPN documentation](https://openvpn.net/community-resources/how-to).
+There's more information on managing OpenVPN clients, like revoking access by revoking certificates, in the [OpenVPN How To Guide](https://openvpn.net/community-resources/how-to).
 
 ## Distributing configuration files to clients and testing
 
 The <code>*.ovpn</code> configuration files need to be treated like they are passwords allowing open access to the network.  The files need to be kept secure as they are distributed to client machines.
 
-Confiuring and running an OpenVPN client is beyond the scope of this document, so I'll leave that as an exercise for the reader.  I will point out a few things on the UDM which could help with troubleshooting:
+Configuring and running an OpenVPN client is beyond the scope of this document, so I'll leave that as an exercise for the reader.  I will point out a few things on the UDM which could help with troubleshooting:
 
 * The OpenVPN server writes its log output into the UDM's <code>/var/log/messages</code> file.  The amount of information it writes can be controlled by setting the <code>verb</code> directive in the <code>/mnt/data/openvpn/server/server.conf</code> file.  Setting <code>verb 6</code> is recommended for debugging purposes.  The same change can be made in a client's configuration file to see debugging data at the client end of the connection.
 * The OpenVPN server updates <code>/mnt/data/openvpn/server/openvpn-status.log</code> once every minute with information about currently connected clients.
