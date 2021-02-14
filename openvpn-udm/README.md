@@ -13,7 +13,7 @@ The major steps in this process are:
 
 I haven't tested it, but I assume that OpenVPN cannot be used in server mode at the same time that it is being used in point-to-point mode.  I assume that any point-to-point configuration done through the admin UI would need to be disabled before doing any of what I'll describe below.  But, hey, you never know, I could be totally wrong about this.
 
-# Security Caveat
+## Security Warning
 
 This process requires some additions to the <code>iptables</code> rules that the UDM uses to protect a network behind a firewall.  While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures in the iptables rules changes I describe below.  Fair warning, ok?  Do not do any of this if your UDM protects a critical network.  I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.
 
