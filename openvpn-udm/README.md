@@ -58,17 +58,17 @@ This line tells OpenVPN the IP address or the hostname of the WAN network interf
 ```
 server 10.8.0.0 255.255.255.0
 ```
-This is the IP subnet from which my VPN clients are assigned addresses by the server.  It needs to be a subnet that isn't in use elsewhere in my network.  This subnet needs to match the one used in the <code>iptables</code> rules that are in the OpenVPN boot script I'll be creating below.
+This is the IP subnet from which my VPN clients are assigned addresses by the server.  It needs to be a subnet that isn't in use elsewhere in my network.
 ```
 push "route 192.168.1.0 255.255.255.0"
 ```
-There needs to be a line like this for every LAN or VLAN in my network that I want my clients to be able to access.  There also needs to be a matching <code>iptables</code> rule in the OpenVPN boot script I'll be creating below.  In my case, my clients only need to access my main LAN.  My other VLANs are off limits to them.
+There needs to be a line like this for every LAN or VLAN in my network that I want my clients to be able to access.
 
 ## Creating a boot script to start the OpenVPN server
 
 I want the OpenVPN server to start automatically every time my UDM boots up.  John "boostchicken" D. has made a great little utility that makes this easy.  Go to his [on-boot-script GitHub repository](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) and follow the very simple instructions found there to get it installed.
 
-I wrote the [15-openvpn-server.sh script](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/15-openvpn-server.sh) in this GitHub repository to start the OpenVPN server whenever the UDM boots.  It also configures the <code>iptables</code> firewall rules necessary to allow VPN traffic to flow to and from my OpenVPN clients.  It lives in the <code>/mnt/data/on_boot.d</code> directory used by boostchicken's tool.
+I wrote the [15-openvpn-server.sh script](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/15-openvpn-server.sh) in this GitHub repository to start the OpenVPN server whenever the UDM boots.  It also configures the <code>iptables</code> firewall rules necessary to control access via the VPN.  It lives in the <code>/mnt/data/on_boot.d</code> directory used by boostchicken's tool.
 
 Before using this script on a new server the script might need an edit.  Please look at these parts of the script before using it on a new server:
 ```
