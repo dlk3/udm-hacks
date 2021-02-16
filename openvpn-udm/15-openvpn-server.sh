@@ -1,46 +1,49 @@
 #!/bin/sh
 
 WAN_IF='eth8'
-LAN_IF='br0'
+OPENVPN_PORT='1194'
 
+#  This function inserts and deletes the iptables rules we need.
+#
+#  New rules are "inserted" at the top of their respective chains so, if order is important, 
+#  rules need to be issued in reverse order (bottom-to-top) inside this function.
 function iptables_rules () {
-    [ -z "$1" ] && return 1
-    # Allow incoming traffic to the OpenVPN port
-    /usr/sbin/iptables $1 INPUT -p udp --dport 1194 -m state --state NEW -s 0.0.0.0/0 -j ACCEPT
-    # Allow incoming traffic to the TUN interface
-    /usr/sbin/iptables $1 INPUT -i tun0 -j ACCEPT
-    # Allow TUN interface traffic to be forwarded to any other interface
-    /usr/sbin/iptables $1 FORWARD -i tun0 -j ACCEPT
-    # Allow LAN hosts to send traffic back to the TUN interface if they have an established connection
-    # Add similar rules for other VLAN interfaces if required
-    /usr/sbin/iptables $1 FORWARD -i $LAN_IF -o tun0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-    # Allow outbound traffic from the TUN interface
-    /usr/sbin/iptables $1 OUTPUT -o tun0 -j ACCEPT
-    # Block any traffic between VPN clients 
-    # The subnet definition used here must match the that defined in the OpenVPN server.conf
-    /usr/sbin/iptables $1 FORWARD -i tun0 -s 10.8.0.0/24 -d 10.8.0.0/24 -j DROP
+    #  Open the OpenVPN port on the WAN interface
+    iptables $1 INPUT -i $WAN_IF -p udp --dport $OPENVPN_PORT -m state --state NEW -s 0.0.0.0/0 -j ACCEPT
 }
 
-#  Get the PID of any OpenVPN process that's running now
+#  This function prevents duplicate iptables rules being put into the chains
+function iptables () {
+    ACTION=$(echo "$*" | sed 's/.*\(-I\|-D\) .*/\1/')
+    TEST=$(echo "$*" | sed 's/\(.*\)-I\|-D \(.*\)/\1-C \2/')
+    if [ "$ACTION" == "-D" ]; then
+        eval "/usr/sbin/iptables $TEST &>/dev/null" && eval "/usr/sbin/iptables $*"
+    else
+        eval "/usr/sbin/iptables $TEST &>/dev/null" || eval "/usr/sbin/iptables $*"
+    fi
+    [ $? -eq 0 ] || echo "\"iptables $*\" command failed"
+}
+
+#  Get the PID of any OpenVPN process that's running right now
 PID=$(ps -ef | grep "/usr/sbin/[o]penvpn" | awk '{print $1 }')
 
 case "$1" in
+    "start"|"")
+	[ ! -z "$PID" ] && echo 'OpenVPN is already running' && exit 1
+        iptables_rules "-I"
+        /usr/sbin/openvpn --daemon --config /mnt/data/openvpn/server/server.conf
+        ;;
     "stop")
 	[ -z "$PID" ] && echo 'OpenVPN is not running' && exit 1
-        kill -sigint $PID
         iptables_rules "-D"
+        kill -sigint $PID
         ;;
     "delete_rules")
         iptables_rules "-D"
         ;;
-    "start"|"")
-	[ ! -z "$PID" ] && echo 'OpenVPN is already running' && exit 1
-        iptables_rules "-I"
-	#  When OpenVPN runs as a daemon its output is logged in /var/log/messages
-        /usr/sbin/openvpn --daemon --config /mnt/data/openvpn/server/server.conf
-        ;;
     *)
         echo "Usage: $0 [start|stop|delete_rules]"
         echo "       If no action is specified, "start" is the default."
+        exit 1
         ;;
 esac
