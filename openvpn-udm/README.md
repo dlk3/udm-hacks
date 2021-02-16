@@ -15,7 +15,7 @@ I haven't tested whether OpenVPN cannot be used in server mode at the same time 
 
 ## Security Warning
 
-This process requires some additions to the <code>iptables</code> rules that the UDM uses to protect a network behind a firewall.  While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures in the iptables rules changes I describe below.  Fair warning, ok?  Do not do any of this if your UDM protects a critical network.  I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.
+This process is all about opening a hole in the UDM firewall, thereby making the network that the UDM protects less secure, by deifinition.  While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures inherent in making the UDM configuration changes I describe below.  Fair warning, ok?  Do not do any of this if your UDM protects a critical network.  I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.
 
 ## Install EasyRSA
 
@@ -70,24 +70,14 @@ I want the OpenVPN server to start automatically every time my UDM boots up.  Jo
 
 I wrote the [15-openvpn-server.sh script](https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/15-openvpn-server.sh) in this GitHub repository to start the OpenVPN server whenever the UDM boots.  It also configures the <code>iptables</code> firewall rules necessary to allow VPN traffic to flow to and from my OpenVPN clients.  It lives in the <code>/mnt/data/on_boot.d</code> directory used by boostchicken's tool.
 
-Before using this script on a new server the <code>iptables</code> rules that it contains would need to be modified to match that sever's server.conf file.  Let's look at some of the rules that get set by the <code>iptables_rules</code> function inside the script:
+Before using this script on a new server the script might need an edit.  Please look at these parts of the script before using it on a new server:
 ```
-#  Allow incoming traffic to the OpenVPN port
-/usr/sbin/iptables $1 INPUT -p udp --dport 1194 -m state --state NEW -s 0.0.0.0/0 -j ACCEPT
+WAN_IF='eth8'
+OPENVPN_PORT='1194'
 ```
-The distination port, 1194, used in this rule needs to match the <code>port</code> directive in the server configuration file.
-```
-# Allow LAN hosts to send traffic back to the TUN interface if they have an established connection
-# Add similar rules for other VLAN interfaces if required
-/usr/sbin/iptables $1 FORWARD -i $LAN_IF -o tun0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-```
-I only need my clients to access my main LAN network, which uses the <code>br0</code> interface on my UDM.  If I want my clients to be able to access other networks I would need to add a line like this for the interfaces used by those VLANs.  I'd also need to add a <code>push</code> directive to the server configuration that would push a route for those VLANs to the clients.
-```
-# Block any traffic between VPN clients
-# The subnet definition used here must match the that defined in the OpenVPN server.conf
-/usr/sbin/iptables $1 FORWARD -i tun0 -s 10.8.0.0/24 -d 10.8.0.0/24 -j DROP
-```
-If the <code>server</code> directive in the server configuration file specifies a subnet other than <code>10.8.0.0 255.255.255.0</code> then I would need to change this rule to match.
+Confirm that the WAN interface specified here is, indeed, the WAN interface of the UDM.  The OpenVPN port, 1194, specified here needs to match the <code>port</code> directive in the server configuration file.
+
+There is only one <code>iptables</code> firewall rule needed in order to enable OpenVPN on the UDM.  The rule used in my script opens the OpenVPN port on the WAN network interface to any internet device.  Once a device has authenticated with OpenVPN and has been connected to the VPN subnet then the UDM's access policies will apply to it.  By default the UDM allows all devices on all networks to communicate.  If restrictions are required, additional rules will need to be added to the script.
 
 ### Script command line options
 
@@ -95,7 +85,7 @@ The <code>15-openvpn-server.sh</code> script can also be used to manually contro
 
 - Start the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server</code> 
 - Stop the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server stop</code>
-- Delete the iptables rules associated with the OpenVPN server<br /><code>/mnt/data/openvpn/15-openvpn-server delete_rules</code>
+- Delete the <code>iptables</code> rules controlled by this script<br /><code>/mnt/data/openvpn/15-openvpn-server delete_rules</code>
 
 ## Creating OpenVPN configuration files for clients
 
