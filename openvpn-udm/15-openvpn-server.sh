@@ -9,7 +9,7 @@ OPENVPN_PORT='1194'
 #  rules need to be issued in reverse order (bottom-to-top) inside this function.
 function iptables_rules () {
     #  Open the OpenVPN port on the WAN interface
-    iptables $1 UBIOS_WAN_LOCAL_USER -i $WAN_IF -p udp --dport $OPENVPN_PORT -m conntrack --ctstate NEW -s 0.0.0.0/0 -j RETURN
+    iptables $1 UBIOS_WAN_LOCAL_USER -i $WAN_IF -p udp --dport $OPENVPN_PORT -m conntrack --ctstate NEW -j RETURN
 }
 
 #  This function prevents duplicate iptables rules being put into the chains
