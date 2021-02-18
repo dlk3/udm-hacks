@@ -1,7 +1,7 @@
 #!/bin/sh
 
 WAN_IF='eth8'
-OPENVPN_PORT='12194'
+OPENVPN_PORT='1194'
 
 #  This function inserts and deletes the iptables rules we need.
 #
