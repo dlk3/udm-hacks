@@ -1,5 +1,7 @@
 Hacks in this repository:
 
+__away-recording__ - Integrate Unifi Protect With SmartThings presence detection to only record camera events when I'm away from home or asleep.
+
 __openvpn-udm__ - How to configure OpenVPN on the UDM as a VPN server
 
 __ntopng-udm-fedora__ - Run the ntopng Network Traffic Monitoring tool on the UDM.  This is my recreation of [tusc's ntopng-udm podman container](https://github.com/tusc/ntopng-udm) using Fedora and including a number of "improvements."
