@@ -8,9 +8,9 @@ I wanted to run this script on the UDM itself so it is written for the version o
 
 Here is the process I went through to install the script on the UDM:
 
-1.  I already have John D (bootchicken)'s [on-boot-script](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) utility installed.  If you don't, I highly recommend it.  You'll need it, or something very much like it, down below.
+1.  I already have John D (boostchicken)'s [on-boot-script](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) utility installed.  If you don't, I highly recommend it.  You'll need it, or something very much like it, down below.
 2.  Modify the ```away-recording``` script to include your UDM login credentials, your SmartThings API token and the list of cameras you want to control.
-3.  Install the away-recording script into the ```/mnt/data/unifi-os/dlk-udm-hacks/``` directory on your UDM.  Make sure that the file has execute permissions for the root id.  (If you install the script in a different subdirectory underneath /mnt/data/unifi-os, be sure to make the corresponding change in the ```20-away-recording.sh``` boot script that is mentioned below.)
+3.  Install the ```away-recording``` script into the ```/mnt/data/unifi-os/dlk-udm-hacks/``` directory on your UDM.  Make sure that the file has execute permissions for the root id.  (If you install the script in a different subdirectory underneath /mnt/data/unifi-os, be sure to make the corresponding change in the ```20-away-recording.sh``` boot script that is mentioned below.)
 4.  Access the UDM via ssh.  You will be logged in to the base operating system's shell as root.
 5.  Access the unifi-os container's shell with the command: ```unifi-os shell```
 6.  Install the Python requests module: ```apt install python-requests```<br />This install will persist through system reboots but will need to be repeated whenever Ubiquiti updates the network controller, i.e., installs a new version of the unifi-os container, on your UDM.
