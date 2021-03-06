@@ -1,7 +1,9 @@
 #!/bin/sh
 
+DATADIR="/mnt/data/ntopng"
+
 #  Allow this script to be run as the "ntopng" command
-ln -s $(realpath $0) /usr//bin/ntopng &>/dev/null
+ln -s /mnt/data/on_boot.d/15-start-ntopng.sh /usr/bin/ntopng &>/dev/null
 
 # Start existing container
 echo "Trying to start existing container instance ..."
@@ -11,12 +13,12 @@ podman start ntopng
 if [ $? -eq 125 ]; then
     echo "Trying to start a new container instance ..."
     podman run -d --net=host --privileged --restart always --name ntopng \
-       -v /mnt/data_ext/ntopng/GeoIP.conf:/etc/GeoIP.conf \
-       -v /mnt/data_ext/ntopng/ntopng.conf:/etc/ntopng/ntopng.conf \
-       -v /mnt/data_ext/ntopng/redis.conf:/etc/redis/redis.conf \
-       -v /mnt/data_ext/ntopng/lib:/var/lib/ntopng \
-       -v /mnt/data_ext/ntopng/redis:/var/lib/redis \
+       -v ${DATADIR}/GeoIP.conf:/etc/GeoIP.conf \
+       -v ${DATADIR}/ntopng.conf:/etc/ntopng/ntopng.conf \
+       -v ${DATADIR}/redis.conf:/etc/redis/redis.conf \
+       -v ${DATADIR}/lib:/var/lib/ntopng \
+       -v ${DATADIR}/redis:/var/lib/redis \
        -v /etc/localtime:/etc/localtime:ro \
-       -v /mnt/data_ext/ntopng/ssl/ntopng-cert.pem:/usr/share/ntopng/httpdocs/ssl/ntopng-cert.pem \
+       -v ${DATADIR}/ssl/ntopng-cert.pem:/usr/share/ntopng/httpdocs/ssl/ntopng-cert.pem \
        ntopng-udm:latest
 fi
