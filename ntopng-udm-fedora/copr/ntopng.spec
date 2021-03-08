@@ -31,7 +31,10 @@ can be obtained from the traffic captured by the server.
 %prep
 tar -zxvf %{SOURCE0}
 tar -zxvf %{SOURCE1}
-patch0
+
+
+%patch0
+
 
 %build
 cd nDPI
