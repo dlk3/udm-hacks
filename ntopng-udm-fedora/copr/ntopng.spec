@@ -16,6 +16,7 @@ Source1:	nDPI.tar.gz
 Source2:	%{name}.conf
 Source3:	%{name}.service
 Source4:	%{name}.sysconfig
+Patch0:		ntopng-utils-manage-config.patch
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
@@ -30,7 +31,7 @@ can be obtained from the traffic captured by the server.
 %prep
 tar -zxvf %{SOURCE0}
 tar -zxvf %{SOURCE1}
-
+patch0
 
 %build
 cd nDPI

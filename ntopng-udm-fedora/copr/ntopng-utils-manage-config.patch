@@ -1,0 +1,8 @@
+--- ntopng/httpdocs/misc/ntopng-utils-manage-config.in.orig	2021-03-08 15:46:39.463460578 -0500
++++ ntopng/httpdocs/misc/ntopng-utils-manage-config.in	2021-03-08 15:47:02.359157220 -0500
+@@ -1,4 +1,4 @@
+-#!@BIN_PATH@/bash
++#!/usr/bin/bash
+ 
+ OS="`uname`"
+ 
