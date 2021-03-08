@@ -37,6 +37,7 @@ else
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.conf .
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.service .
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.sysconfig .
+	mv udm-hacks/ntopng-udm-fedora/copr/ntopng-utils-manage-config.patch .
 	rm -fr udm-hacks
 	NAME='nDPI'
 	git clone https://github.com/ntop/${NAME}.git
