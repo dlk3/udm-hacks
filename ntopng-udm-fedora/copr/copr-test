@@ -37,7 +37,7 @@ else
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.conf .
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.service .
 	mv udm-hacks/ntopng-udm-fedora/copr/ntopng.sysconfig .
-	mv udm-hacks/ntopng-udm-fedora/copr/ntopng-utils-manage-config.patch .
+	#mv udm-hacks/ntopng-udm-fedora/copr/ntopng-utils-manage-config.patch .
 	rm -fr udm-hacks
 	NAME='nDPI'
 	git clone https://github.com/ntop/${NAME}.git
@@ -64,6 +64,7 @@ else
 	SOURCE3=$(echo $SOURCE3 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
 	SOURCE4=$(sed -n 's/^Source4:[[:space:]]*//p' "$SPECFILE")
 	SOURCE4=$(echo $SOURCE4 | sed "s/%{name}/${NAME}/g;s/%{version}/${VERSION}/g")
+	#PATCH0=$(sed -n 's/^Patch0:[[:space:]]*//p' "$SPECFILE")
 
 	#  Install the BuildRequires packages listed in the spec file
 	PACKAGES=''
@@ -82,6 +83,7 @@ else
 	mv /tmp/copr-test/${SOURCE2} ${HOME}/rpmbuild/SOURCES/
 	mv /tmp/copr-test/${SOURCE3} ${HOME}/rpmbuild/SOURCES/
 	mv /tmp/copr-test/${SOURCE4} ${HOME}/rpmbuild/SOURCES/
+	#mv /tmp/copr-test/${PATCH0} ${HOME}/rpmbuild/SOURCES/
 	
 	#  Build the package ...
 	rpmbuild -ba "${HOME}/rpmbuild/SPECS/$SPECFILE"

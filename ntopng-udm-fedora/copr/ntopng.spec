@@ -16,7 +16,7 @@ Source1:	nDPI.tar.gz
 Source2:	%{name}.conf
 Source3:	%{name}.service
 Source4:	%{name}.sysconfig
-Patch0:		ntopng-utils-manage-config.patch
+#Patch0:		ntopng-utils-manage-config.patch
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
@@ -33,7 +33,7 @@ tar -zxvf %{SOURCE0}
 tar -zxvf %{SOURCE1}
 
 
-%patch0
+#%patch0
 
 
 %build
@@ -87,5 +87,9 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 
 %changelog
+* Mon Mar 22 2021 David King <dave@daveking.com>
+	Remove @BIN_DIR@ patch
+* Mon Mar 07 2021 David King <dave@daveking.com>
+	Add @BIN_DIR@ patch
 * Sat Jan 30 2021 David King <dave@daveking.com>
 	Initial Version
