@@ -13,4 +13,4 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT entrypoint.sh
 
-LABEL maintainer="David King dave@daveking.com"
+LABEL maintainer="David King <dave@daveking.com>"
