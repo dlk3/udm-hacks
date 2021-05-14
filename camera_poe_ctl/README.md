@@ -4,4 +4,5 @@ This script will enable or disable PoE power on ports on a Unifi switch that hav
 
 1.  The script queries the Protect application on the Unifi UDM to get the MAC address of the camera named on the command line.
 2.  The script then queries the Network application on the Unifi UDM to find the switch port that is connected to a client with that MAC address.
-3.  Finally the script turns PoE power on that port either on or off as was specified on the command line.  If no specific action was specified on the command line then the script toggles the PoE setting, turning power off it is currently on, and on if it is currently off. 
+3.  Finally the script turns PoE power on that port either on or off as was specified on the command line.  If no specific action was specified on the command line then the script toggles the PoE setting, turning power off it is currently on, and on if it is currently off.
+4.  In my environment It takes about five seconds for the switch to receive and process the port configuration change.  The switch resets when the change is processed and client devices on that switch can loose their current network sessions when that happens.

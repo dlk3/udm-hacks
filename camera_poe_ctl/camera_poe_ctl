@@ -28,6 +28,7 @@ from optparse import OptionParser
 import json
 import base64
 import datetime
+import subprocess
 
 #  Write messages to the console and log file
 #  Later Python versions may require that the print statement used in this function be modified.
@@ -39,9 +40,16 @@ def log(message):
 			f.write('{} {}\n'.format(timestamp, message))
 	if not opts.quiet:
 		print('{} {}'.format(timestamp, message))
+
+#  Do a system notification
+def notify_send(title, text):
+	global opts
+	if opts.notify:
+		subprocess.run('notify-send -i system-shutdown "{}" "{}"'.format(title, text), shell=True)
 	
 #  Define command-line options to turn off console output and to log progress into a file
 cmdline = OptionParser(usage="usage: %prog <camera_name> [on|off]", description='Set security camera PoE power on or off')
+cmdline.add_option('-n', '--notify', action='store_true', dest='notify', default=False, help='Send system notifications when PoE changes are made or errors occur')    
 cmdline.add_option('-q', '--quiet', action='store_true', dest='quiet', default=False, help='Do not print any log messages on the console')    
 cmdline.add_option('-l', '--log', dest='logfile', metavar='FILE', help='Write log messages into this file')
 opts, args = cmdline.parse_args()
@@ -77,10 +85,14 @@ data = {
 try:
 	r = requests.post(udm_url + '/api/auth/login', json=data, verify=False)
 except Exception as e:
-	log('ABORT: Unexpected exception while logging in to {}\n{}'.format(udm_url, e))
+	text = 'ABORT: Unexpected exception while logging in to {}\n{}'.format(udm_url, e)
+	log(text)
+	notify_send('Request Exception', text)
 	exit(1)
 if r.status_code != 200:
-	log('ABORT: The login failed: ' + r.text)
+	text = 'ABORT: The login failed: ' + r.text
+	log(text)
+	notify_send('Login Error', text)
 	exit(r.status_code)
 	
 #  Set authorization cookies for all subsequent requests
@@ -98,7 +110,9 @@ for cookie in r.headers['Set-Cookie'].split(';'):
 #  Get the information for all of the cameras this UDM knows about
 r = requests.get(udm_url + '/proxy/protect/api/bootstrap', headers=headers, verify=False)
 if r.status_code != 200:
-	log('ABORT: The request for camera information failed: ' + r.text)
+	text = 'ABORT: The request for camera information failed: ' + r.text
+	log(text)
+	notify_send('Request Error', text)
 	exit(r.status_code)
 
 #  Get the camera's MAC address
@@ -115,13 +129,17 @@ for unifi_camera in r.json()['cameras']:
 		camera_mac = unifi_camera['mac'].upper()
 				
 if camera_mac == '':
-	log('Unable to find a camera named "{}" on this UDM.\nThe cameras this UDM supports are:\n\t{}'.format(camera, '\n\t'.join(camera_list)))
+	text = 'Unable to find a camera named "{}" on this UDM.\nThe cameras this UDM supports are:\n\t{}'.format(camera, '\n\t'.join(camera_list))
+	log(text)
+	notify_send('Unknown Camera', text)
 	exit(1)
 
 #  Get the MAC address of the switch and the switch port the camera is plugged into
 r = requests.get(udm_url + '/proxy/network/api/s/default/stat/sta', headers=headers, verify=False)
 if r.status_code != 200:
-	log('ABORT: The request for network client information failed: ' + r.text)
+	text = 'ABORT: The request for network client information failed: ' + r.text
+	log(text)
+	notify_send('Request Error', text)
 	exit(r.status_code)
 
 switch_mac = ''
@@ -132,13 +150,17 @@ for client in r.json()['data']:
 		switch_port = client['sw_port']
 
 if switch_mac == '':
-	log('Unable to figure out what switch port the "{}" camera is connected to'.format(camera))
+	text = 'Unable to figure out what switch port the "{}" camera is connected to'.format(camera)
+	log(text)
+	notify_send('Unable To Determine Switch Port', text)
 	exit(1)
 
 #  Get the switch configuration details
 r = requests.get(udm_url + '/proxy/network/api/s/default/stat/device', headers=headers, verify=False)
 if r.status_code != 200:
-	log('ABORT: The request for switch configuration information failed: ' + r.text)
+	text = 'ABORT: The request for switch configuration information failed: ' + r.text
+	log(text)
+	notify_send('Request Error', text)
 	exit(r.status_code)
 
 device_config = ''
@@ -150,22 +172,34 @@ for device in r.json()['data']:
 		device_id = device['_id']
 
 if device_config == '':
-	log('Unable to get the configuration information for the switch that "{}" is connected to'.format(camera))
+	text = 'Unable to get the configuration information for the switch that "{}" is connected to'.format(camera)
+	log(text)
+	notify_send('Unable ToGet Switch Configuration', text)
 	exit(1)
 
 #  Get current POE status from the switch's port_table and define a port_override
 #  json dictionary for the camera port
 for port in device_config['port_table']:
 	if port['port_idx'] == switch_port:
-		poe_status = port['poe_enable']
-		port_override = {
-			'autoneg': port['autoneg'],
-			'full_duplex': port['full_duplex'],
-			'port_idx': port['port_idx'],
-			'port_security_mac_address': [],
-			'portconf_id': port['portconf_id'],
-			'speed': port['speed']
-		}
+		try:
+			poe_status = port['poe_enable']
+			port_override = {
+				'autoneg': port['autoneg'],
+				'full_duplex': port['full_duplex'],
+				'port_idx': port['port_idx'],
+				'port_security_mac_address': [],
+				'portconf_id': port['portconf_id'],
+				'speed': port['speed']
+			}
+		except KeyError as e:
+			text = 'Missing port attribute: {}'.format(e)
+			log(text)
+			notify_send('Unable To Determine PoE Status', text)
+			exit(1)
+		except Exception as e:
+			log('ABORT: Unexpected exception: {}'.format(e))
+			notify_send('Unexpected Exception', e)
+			exit(1)
 
 #  Submit request to change the port's poe_mode based on current status and action specified 
 if action == None:
@@ -178,9 +212,13 @@ else:
 	if action:
 		log('Turning PoE on for {} camera'.format(camera))
 		port_override['poe_mode'] = 'auto'
+		title = 'Turned On {} Camera'.format(camera)
+		text = 'PoE power for the {} camera has been turned on'.format(camera)
 	else:
 		log('Turning PoE off for {} camera'.format(camera))
 		port_override['poe_mode'] = 'off'
+		title = 'Turned Off {} Camera'.format(camera)
+		text = 'PoE power for the {} camera has been turned off'.format(camera)
 	data = {
 		'port_overrides': [port_override]
 	} 
@@ -189,3 +227,4 @@ else:
 		log('ABORT: The request to set poe_mode for the "' + camera + '" camera failed: ' + r.text)
 		exit(r.status_code)
 	log('Successfully completed')
+	notify_send(title, text)
