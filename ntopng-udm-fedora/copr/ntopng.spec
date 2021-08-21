@@ -5,9 +5,10 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-#Version:	4.2
-Version:	4.3.%(date +%y%m%d)
-Release:	1%{?dist}
+Version:	5.0
+Release:	0%{?dist}
+#Version:	4.3.%(date +%y%m%d)
+#Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
 License:	GPLv3.0
