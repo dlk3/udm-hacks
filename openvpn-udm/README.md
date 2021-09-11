@@ -21,9 +21,7 @@ This process is all about opening a new hole in the UDM firewall, thereby making
 
 EasyRSA is a tool that the OpenVPN development team has created to make the process of creating the PKI (public key infrastructure) associated with OpenVPN simpler.  This PKI is where I create, store and manage all of the certificates, keys and configuration files for my OpenVPN server and clients.  
 
-EasyRSA is available in the OpenVPN GitHub repository at (https://github.com/OpenVPN/easy-rsa/releases/latest).  I downloaded the latest <code>EasyRSA-*.tgz</code> file found there and moved it to the "/mnt/data" directory on my UDM.
-
-After connecting to my UDM via ssh, I installed EasyRSA with these commands:
+EasyRSA is available in the OpenVPN GitHub repository at (https://github.com/OpenVPN/easy-rsa/releases/latest).  Get the name of the latest <code>EasyRSA-*.tgz</code> file there and then substitute it into these commands to complete the installation:
 ```
 mkdir -p /mnt/data/openvpn/easyrsa
 curl -OJL https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
@@ -77,7 +75,7 @@ OPENVPN_PORT='1194'
 ```
 Confirm that the WAN interface specified here is, indeed, the WAN interface of the UDM.  The OpenVPN port, 1194, specified here needs to match the <code>port</code> directive in the server configuration file.
 
-There is only one <code>iptables</code> firewall rule needed in order to enable OpenVPN on the UDM.  The rule used in my script opens the OpenVPN port on the WAN network interface to any internet device.  Once a device has authenticated by OpenVPN server and has been connected its VPN subnet then the UDM's access policies will apply to it.  By default the UDM allows all devices on all networks to communicate with each other.  If restrictions are required, configuration changes will need to be made via the UDM's network configuration UI.
+There is only one <code>iptables</code> firewall rule needed in order to enable OpenVPN on the UDM.  The rule used in my script opens the OpenVPN port on the WAN network interface to any internet device.  Once a device has been authenticated by the OpenVPN server, and has been connected to the VPN subnet, then the UDM's regular access rules will control what parts of the local network it has access to.  By default the UDM allows all devices on all networks to communicate with each other.  That works for me.  If you require additional restrictions, make the necessary changes using the UDM's regular network configuration UI.
 
 ### Script command line options
 
