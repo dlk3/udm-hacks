@@ -5,7 +5,7 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-Version:	5.2
+Version:	5.2.1
 Release:	0%{?dist}
 #Version:	5.3.%(date +%y%m%d)
 #Release:	1%{?dist}
@@ -22,7 +22,7 @@ Source4:	%{name}.sysconfig
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
-BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
+BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
 
 
 %description
@@ -90,7 +90,7 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 %changelog
 * Thu Feb 03 2022 David King <dave@daveking.com>
-	Update version number to 5.2 (stable)
+	Update version number to 5.2.1 (stable)
 * Tue Sep 28 2021 David King <dave@daveking.com>
 	Update version number to 5.1.x
 * Mon Mar 22 2021 David King <dave@daveking.com>
