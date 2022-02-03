@@ -44,7 +44,7 @@ else
 	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' 'ntopng.spec')
-	#git clone https://github.com/ntop/${NAME}.git --branch=5.2
+	#git clone https://github.com/ntop/${NAME}.git --branch=5.2-stable
 	git clone https://github.com/ntop/${NAME}.git
 	tar -czf ${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
