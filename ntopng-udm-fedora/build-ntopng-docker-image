@@ -4,8 +4,6 @@
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-DOCKER_PASSWORD='9ycJKrNK9vSRZM'
-
 #  Keep the container running and give me a shell prompt when something bad happens
 trap /bin/sh ERR
 
@@ -32,16 +30,16 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 
 	if $TESTBUILD; then
 		#  Build the RPMs
-		echo "Starting RPM build at $(date +%H:%m:%s)"
+		echo "Starting RPM build at $(date +%H:%m:%S)"
 		podman run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
-		echo "RPM build complete at $(date +%H:%m:%s)"
+		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
 		#  Build the RPMs
 		STARTTIME=$(date +%s)
-		echo "Starting RPM build at $(date +%H:%m:%s)"
+		echo "Starting RPM build at $(date +%H:%m:%S)"
 		podman run --arch=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
-		echo "RPM build complete at $(date +%H:%m:%s)"
+		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		#  Build the container
@@ -58,7 +56,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		podman logout docker.io
 		#  Clean up
 		podman image prune --force
-		echo "Container build complete at $(date +%H:%m:%s)"
+		echo "Container build complete at $(date +%H:%m:%S)"
 		echo "The entire process took $(elapsed $STARTTIME)"
 	fi
 

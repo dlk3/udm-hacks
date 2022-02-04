@@ -4,7 +4,7 @@ This section outlines the process I use to build and test the container on a x86
 
 ## Building the ntopng RPM package
 
-I use the Fedora COPR repository to build and distribute the ntopng RPM file that the Dockerfile installs into the ntopng-udm container.  The files that I use to build that RPM in COPR are in this GitHub repository in the folder called [ntopng-udm-fedora/copr](https://github.com/dlk3/udm-hacks/tree/master/ntopng-udm-fedora/copr)  Both an x86_64 and arm64 (aarch64) version of the RPM need to be built in COPR.
+Modify the <code>build-ntopng-docker-image</code> script that's in this project and set TESTBUILD to "true".  Run the script.  The ntopng RPM will be created and store in the ${HOME}/rpmbuild/RPMS/x86_64 directory.  Move this RPM to the directory within this project that contains the Dockerfile.
 
 ## Building the container
 

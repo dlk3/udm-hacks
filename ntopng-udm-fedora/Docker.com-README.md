@@ -29,7 +29,7 @@ If the secondary disk is installed in the UDM then `/mnt/data_ext` can be used a
 
 ## Enabling GeoIP support
 
-If you want GeoIP support, i.e., you want geo maps of hosts sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /mnt/data/ntopng/GeoIP.conf file.
+If you want GeoIP support, i.e., you want geo location information for the hosts that are sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /mnt/data/ntopng/GeoIP.conf file.
 
 ## Installing The Container
 
@@ -52,21 +52,21 @@ podman run -d --net=host --privileged --restart always --name ntopng \
 ```
 Remember to use `/mnt/data_ext` as the root for the directories if you are keeping the application data on the UDM's secondary disk.
 
-To stop ntopng:
+To temporarily stop the ntopng container:
 
 `podman stop ntopng`
 
-To start ntopng:
+To restart the ntopng container:
 
 `podman start ntopng`
 
-You will need to do this start command each time the UDM is rebooted or upgraded.  (The ntopng-udm container and its data will survive a UDM firmward update.)  To perform this task automatically at boot time take a look at John D's [on-boot-script project](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) on GitHub for a tool that can help you do that.
+You will need to do the start command each time the UDM is rebooted or upgraded.  (The ntopng-udm container and its data will survive a UDM firmward update.)  To perform this task automatically at boot time take a look at John D's [on-boot-script project](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) on GitHub for a tool that can help you do that.
 
 ## Accessing ntopng
 
 Point your browser to https://YOUR.UDM.IP.ADDRESS:3001, for example: https://192.168.1.1:3001
 
-In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser will ask you to accept this certificate the first time you access ntopng.
+In this container ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser may ask you to accept this certificate when you access ntopng.
 
 The ntopng documentation can be found [here](https://www.ntop.org/guides/ntopng/).  Note that this container runs the Community Edition of ntopng.
 
