@@ -19,9 +19,10 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	#  this system's native architecture (x86 I assume, not the UDM's aarch64.)
 	#
 	#  Set to false to build the RPM and the Docker container for the UDM using 
-	#  qemu amd64 emulation.  This is VERY SLOW.
+	#  qemu amd64 emulation.  This is VERY SLOW.  (It takes a little over 2 hours 
+	#  on my workstation.)
 	#
-	#  Need to have installed QEMU emulation packages: qemu-user-static qemu-user
+	#  Need to have installed the QEMU emulation package: qemu-user-static
 	TESTBUILD=false
 
 	find ${HOME}/rpmbuild/SRPMS -iname ntopng-\* -delete
@@ -35,15 +36,28 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
+	
+		#  Make sure we know the docker password
+		if [ -z "$DOCKER_PASSWORD" ]; then
+			echo "Please set the DOCKER_PASSWORD environment variable before running this script:"
+			echo "   $ DOCKER_PASSWORD='whatever' $0"
+			exit 1
+		fi
+		
 		#  Build the RPMs
 		STARTTIME=$(date +%s)
 		echo "Starting RPM build at $(date +%H:%m:%S)"
 		podman run --arch=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
-		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
+		
+		#  Just for the hell of it, send the SRPM to COPR to be built there
+		copr build --nowait dlk/rpms ${HOME}/rpmbuild/SRPMS/ntopng*
+		
 		#  Build the container
-		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.src.rpm .
+		echo "Starting container build at $(date +%H:%m:%S)"
+		find -iname ntopng-\*.rpm -delete
+		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
 		VERSION=$( ls ntopng*.aarch64.rpm | sed 's/"//g;s/ntopng-\([^-]*\)-.*$/\1/' )
 		podman buildx build --no-cache --arch=linux/arm64 -t dlk3/ntopng-udm:$VERSION -t dlk3/ntopng-udm:latest .
