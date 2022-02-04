@@ -6,7 +6,6 @@
 
 Name:		ntopng
 #Version:	5.2.1
-#Release:	0%{?dist}
 Version:	5.2.%(date +%y%m%d)
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.

@@ -24,9 +24,9 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	#  qemu amd64 emulation.  This is VERY SLOW.
 	#
 	#  Need to have installed QEMU emulation packages: qemu-user-static qemu-user
-	TESTBUILD=true
+	TESTBUILD=false
 
-	rm -f ${HOME}/rpmbuild/SRPMS/ntopng*
+	find ${HOME}/rpmbuild/SRPMS -iname ntopng-\* -delete
 	find ${HOME}/rpmbuild/RPMS -iname ntopng-\* -delete
 	cd $(dirname $(realpath "$0"))
 
