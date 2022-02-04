@@ -32,10 +32,17 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 
 	if $TESTBUILD; then
 		#  Build the RPMs
+		echo "Starting RPM build at $(date +%H:%m:%s)"
 		podman run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
+		echo "RPM build complete at $(date +%H:%m:%s)"
+		echo "That took $(elapsed $STARTTIME)"
 	else
 		#  Build the RPMs
+		STARTTIME=$(date +%s)
+		echo "Starting RPM build at $(date +%H:%m:%s)"
 		podman run --arch=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
+		echo "RPM build complete at $(date +%H:%m:%s)"
+		echo "That took $(elapsed $STARTTIME)"
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		#  Build the container
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.src.rpm .
@@ -51,6 +58,8 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		podman logout docker.io
 		#  Clean up
 		podman image prune --force
+		echo "Container build complete at $(date +%H:%m:%s)"
+		echo "The entire process took $(elapsed $STARTTIME)"
 	fi
 
 else
@@ -89,8 +98,8 @@ else
 	tar -czf ${HOME}/rpmbuild/SOURCES/nDPI.tar.gz nDPI
 	rm -fr nDPI
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' ${HOME}/rpmbuild/SPECS/ntopng.spec)
-	git clone https://github.com/ntop/${NAME}.git --branch=5.2.1
-	#git clone https://github.com/ntop/${NAME}.git
+	#git clone https://github.com/ntop/${NAME}.git --branch=5.2.1
+	git clone https://github.com/ntop/${NAME}.git
 	tar -czf ${HOME}/rpmbuild/SOURCES/${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 
