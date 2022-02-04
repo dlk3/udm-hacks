@@ -1,36 +1,114 @@
 #!/usr/bin/env sh
 
-LOGFILE="/tmp/$(basename $0).log"
-DOCKER_PASSWORD=''
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#  So that we only get output from this when there's an error while it's
-#  running in crontab.  Otherwise, on success, there's no output.
-#  This is kind of like "set -e" but it prints the log file before exiting. 
-function showlog () {
-    RC=$?
-    cat "$LOGFILE"
-    exit $RC
-}
-trap showlog ERR
+DOCKER_PASSWORD='9ycJKrNK9vSRZM'
 
-#  Perform RPM package build in COPR
-copr-cli build-package --name ntopng dlk/rpms &>"$LOGFILE" 
+#  Keep the container running and give me a shell prompt when something bad happens
+trap /bin/sh ERR
 
-#  Get the version number from the COPR RPM
-VERSION=$( copr-cli get-package --name ntopng --with-latest-succeeded-build dlk/rpms | jq .latest_succeeded_build.source_package.version | sed 's/"//g;s/\([^-]*\)-.*$/\1/' )
-if [ -z "$VERSION" ]; then
-    echo "Unable to get version number from COPR build" >>"$LOGFILE"
-    cat "$LOGFILE"
-    exit 1
+#  Abend the script and execute the trap when something bad happens
+set -e
+
+if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
+
+	#  This section of the script does not run in the podman container, it only
+	#  runs on the container's host and drives the overall build process
+
+	#  Set to "true" for quick local testing of the RPM package build process in 
+	#  this system's native architecture (x86 I assume, not the UDM's aarch64.)
+	#
+	#  Set to false to build the RPM and the Docker container for the UDM using 
+	#  qemu amd64 emulation.  This is VERY SLOW.
+	#
+	#  Need to have installed QEMU emulation packages: qemu-user-static qemu-user
+	TESTBUILD=true
+
+	rm -f ${HOME}/rpmbuild/SRPMS/ntopng*
+	find ${HOME}/rpmbuild/RPMS -iname ntopng-\* -delete
+	cd $(dirname $(realpath "$0"))
+
+	if $TESTBUILD; then
+		#  Build the RPMs
+		podman run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
+	else
+		#  Build the RPMs
+		podman run --arch=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
+		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
+		#  Build the container
+		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.src.rpm .
+		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
+		VERSION=$( ls ntopng*.aarch64.rpm | sed 's/"//g;s/ntopng-\([^-]*\)-.*$/\1/' )
+		podman buildx build --no-cache --arch=linux/arm64 -t dlk3/ntopng-udm:$VERSION -t dlk3/ntopng-udm:latest .
+		#podman tag dlk3/ntopng-udm:latest dlk3/ntopng-udm:stable
+		#  Push the images
+		echo "$DOCKER_PASSWORD" | podman login --username dlk3 --password-stdin docker.io
+		podman push dlk3/ntopng-udm:latest
+		podman push dlk3/ntopng-udm:$VERSION
+		#podman push dlk3/ntopng-udm:stable
+		podman logout docker.io
+		#  Clean up
+		podman image prune --force
+	fi
+
+else
+
+	#  This section of the script runs in the podman container to build the ntopng 
+	#  RPM packages.
+
+	#  The resulting packages will be copied to the $HOME directory of the user
+	#  running this script on the host computer.  That user needs to have the
+	#  ~/rpmbuild directory tree set up for this to work.
+	TARGETDIR=$1
+
+	dnf groupinstall -y "Development Tools" "RPM Development Tools"
+	dnf install -y rpm-build wget git
+	dnf upgrade -y
+
+	#  Create the rpmbuild directory tree inside the container
+	mkdir -p ${HOME}/rpmbuild/BUILD
+	mkdir -p ${HOME}/rpmbuild/BUILDROOT
+	mkdir -p ${HOME}/rpmbuild/RPMS
+	mkdir -p ${HOME}/rpmbuild/SOURCES
+	mkdir -p ${HOME}/rpmbuild/SPECS
+	mkdir -p ${HOME}/rpmbuild/SRPMS
+
+	#  Get the spec and other custom files that are part of the build process
+	#  and put them into the appropriate places in the rpmbuild tree
+	git clone https://github.com/dlk3/udm-hacks.git
+	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.spec ${HOME}/rpmbuild/SPECS/
+	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.conf ${HOME}/rpmbuild/SOURCES/
+	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.service ${HOME}/rpmbuild/SOURCES/
+	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.sysconfig ${HOME}/rpmbuild/SOURCES/
+	rm -fr udm-hacks
+	
+	#  Put tarballs of the program source into the container's rpmbuild/SOURCES directory
+	git clone https://github.com/ntop/nDPI.git
+	tar -czf ${HOME}/rpmbuild/SOURCES/nDPI.tar.gz nDPI
+	rm -fr nDPI
+	NAME=$(sed -n 's/^Name:[[:space:]]*//p' ${HOME}/rpmbuild/SPECS/ntopng.spec)
+	git clone https://github.com/ntop/${NAME}.git --branch=5.2.1
+	#git clone https://github.com/ntop/${NAME}.git
+	tar -czf ${HOME}/rpmbuild/SOURCES/${NAME}.tar.gz ${NAME}
+	rm -fr ${NAME}
+
+	#  Install the BuildRequires packages listed in the spec file
+	PACKAGES=''
+	oIFS=$IFS
+	IFS=$'\n'
+	for LINE in `grep ^BuildRequires: "${HOME}/rpmbuild/SPECS/ntopng.spec"`; do
+		PACKAGES+="$(echo $LINE | cut -f2 -d':' | sed 's/,/ /g') "
+	done
+	IFS=$oIFS
+	[ "$PACKAGES" != "" ] && dnf install -y $PACKAGES
+
+	#  Build the package
+	rpmbuild -ba "${HOME}/rpmbuild/SPECS/ntopng.spec"
+	
+	#  Copy the package files out of the container and on to the host
+	cp -vr ${HOME}/rpmbuild/RPMS/* ${TARGETDIR}/rpmbuild/RPMS/
+	cp -vr ${HOME}/rpmbuild/SRPMS/* ${TARGETDIR}/rpmbuild/SRPMS/
+	
 fi
-
-#  Build the Docker container and push it to the registry
-sudo systemctl start docker &>>"$LOGFILE"
-sudo docker run --privileged --rm docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64 &>>"$LOGFILE"
-cd ~/src/udm-hacks/ntopng-udm-fedora &>>"$LOGFILE"
-echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin &>>"$LOGFILE"
-#docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:$VERSION --push . &>>"$LOGFILE"
-docker buildx build --no-cache --platform linux/arm64 -t dlk3/ntopng-udm:latest -t dlk3/ntopng-udm:$VERSION -t dlk3/ntopng-udm:stable --push . &>>"$LOGFILE"
-docker logout &>>"$LOGFILE"
-docker buildx prune --all --force &>>"$LOGFILE"
-

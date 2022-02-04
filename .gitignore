@@ -1,1 +1,3 @@
-ntopng-udm-fedora/myGeoIP.conf
+ntopng-udm-fedora/*.rpm
+ntopng-udm-fedora/Dockerfile.old
+ntopng-udm-fedora/build-ntopng-docker-image.deprecated
