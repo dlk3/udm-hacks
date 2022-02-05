@@ -29,10 +29,11 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	find ${HOME}/rpmbuild/RPMS -iname ntopng-\* -delete
 	cd $(dirname $(realpath "$0"))
 
+	sudo systemctl start docker
 	if $TESTBUILD; then
 		#  Build the RPMs
 		echo "Starting RPM build at $(date +%H:%m:%S)"
-		podman run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
+		docker run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
@@ -47,7 +48,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		#  Build the RPMs
 		STARTTIME=$(date +%s)
 		echo "Starting RPM build at $(date +%H:%m:%S)"
-		podman run --arch=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
+		docker run --platform=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 		
@@ -60,19 +61,22 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
 		VERSION=$( ls ntopng*.aarch64.rpm | sed 's/"//g;s/ntopng-\([^-]*\)-.*$/\1/' )
-		podman buildx build --no-cache --arch=linux/arm64 -t dlk3/ntopng-udm:$VERSION -t dlk3/ntopng-udm:latest .
-		#podman tag dlk3/ntopng-udm:latest dlk3/ntopng-udm:stable
+		docker buildx build --no-cache --platform=linux/arm64 -t docker.io/dlk3/ntopng-udm:$VERSION -t docker.io/dlk3/ntopng-udm:latest .
+		#docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
+		
 		#  Push the images
-		echo "$DOCKER_PASSWORD" | podman login --username dlk3 --password-stdin docker.io
-		podman push dlk3/ntopng-udm:latest
-		podman push dlk3/ntopng-udm:$VERSION
-		#podman push dlk3/ntopng-udm:stable
-		podman logout docker.io
+		echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin docker.io
+		docker push docker.io/dlk3/ntopng-udm:latest docker://docker.io/dlk3/ntopng-udm:latest
+		docker push docker.io/dlk3/ntopng-udm:$VERSION docker://docker.io/dlk3/ntopng-udm:$VERSION
+		#podman push docker.io/dlk3/ntopng-udm:stable docker://docker.io/dlk3/ntopng-udm:stable
+		docker logout docker.io
+		
 		#  Clean up
-		podman image prune --force
+		docker image prune --force
 		echo "Container build complete at $(date +%H:%m:%S)"
 		echo "The entire process took $(elapsed $STARTTIME)"
 	fi
+	sudo systemctl stop docker
 
 else
 

@@ -6,7 +6,7 @@
 
 Name:		ntopng
 #Version:	5.2.1
-Version:	5.2.%(date +%y%m%d)
+Version:	5.3.%(date +%y%m%d)
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -17,7 +17,7 @@ Source1:	nDPI.tar.gz
 Source2:	%{name}.conf
 Source3:	%{name}.service
 Source4:	%{name}.sysconfig
-#Patch0:		ntopng-utils-manage-config.patch
+#Patch0:	ntopng-utils-manage-config.patch
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
@@ -88,8 +88,8 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 
 %changelog
-* Fri Feb 04 2022 David King <dave@daveking.com>
-	Update version number to 5.2.x (unstable)
+* Sat Feb 05 2022 David King <dave@daveking.com>
+	Update version number to 5.3.x (unstable)
 * Thu Feb 03 2022 David King <dave@daveking.com>
 	Update version number to 5.2.1 (stable)
 * Tue Sep 28 2021 David King <dave@daveking.com>
