@@ -31,7 +31,7 @@ You will need to change the network interface specified in /tmp/data/ntopng.conf
 
 ## Enabling GeoIP support
 
-If you want GeoIP support, i.e., you want geo maps of hosts sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /tmp/ntopng/GeoIP.conf file.
+If you want GeoIP support, i.e., you want geo location data for the hosts sending and receiving traffic, then follow [these instructions](https://github.com/ntop/ntopng/blob/dev/doc/README.geolocation.md) on the ntopng web site to create a free account at MaxMind and to register for an API key.  The account and API key values must be placed into the /tmp/ntopng/GeoIP.conf file.
 
 ## Running the container
 
