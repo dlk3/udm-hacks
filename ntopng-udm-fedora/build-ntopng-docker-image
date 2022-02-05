@@ -66,9 +66,9 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		
 		#  Push the images
 		echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin docker.io
-		docker push docker.io/dlk3/ntopng-udm:latest docker://docker.io/dlk3/ntopng-udm:latest
-		docker push docker.io/dlk3/ntopng-udm:$VERSION docker://docker.io/dlk3/ntopng-udm:$VERSION
-		#podman push docker.io/dlk3/ntopng-udm:stable docker://docker.io/dlk3/ntopng-udm:stable
+		docker push docker.io/dlk3/ntopng-udm:latest
+		docker push docker.io/dlk3/ntopng-udm:$VERSION
+		#podman push docker.io/dlk3/ntopng-udm:stable
 		docker logout docker.io
 		
 		#  Clean up
