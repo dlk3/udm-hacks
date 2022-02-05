@@ -5,7 +5,7 @@
 #  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #  Keep the container running and give me a shell prompt when something bad happens
-trap /bin/sh ERR
+#trap /bin/sh ERR
 
 #  Abend the script and execute the trap when something bad happens
 set -e
