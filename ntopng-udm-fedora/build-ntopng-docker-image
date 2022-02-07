@@ -4,8 +4,17 @@
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#  Run in interactive containers with a /bin/sh trap on failure 
+DEBUG=false
+
+#  Build a stable branch.  Must also modify the version and release variables
+#  and the CHANGELOG in the SPEC file
+#STABLE='5.2.1'
+
 #  Keep the container running and give me a shell prompt when something bad happens
-#trap /bin/sh ERR
+if $DEBUG; then
+	trap /bin/sh ERR
+fi
 
 #  Abend the script and execute the trap when something bad happens
 set -e
@@ -33,7 +42,11 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	if $TESTBUILD; then
 		#  Build the RPMs
 		echo "Starting RPM build at $(date +%H:%m:%S)"
-		docker run --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
+		OPT=""
+		if $DEBUG; then
+			OPT="-it"
+		fi
+		docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
@@ -48,7 +61,11 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		#  Build the RPMs
 		STARTTIME=$(date +%s)
 		echo "Starting RPM build at $(date +%H:%m:%S)"
-		docker run --platform=linux/arm64 --interactive --name=rpmbuild --rm --tty --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
+		OPT=""
+		if $DEBUG; then
+			OPT="-it"
+		fi
+		docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 		
@@ -61,14 +78,18 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
 		VERSION=$( ls ntopng*.aarch64.rpm | sed 's/"//g;s/ntopng-\([^-]*\)-.*$/\1/' )
-		docker buildx build --no-cache --platform=linux/arm64 -t docker.io/dlk3/ntopng-udm:$VERSION -t docker.io/dlk3/ntopng-udm:latest .
-		#docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
+		docker buildx build $OPT --no-cache --platform=linux/arm64 -t docker.io/dlk3/ntopng-udm:$VERSION -t docker.io/dlk3/ntopng-udm:latest .
+		if [ ! -z "$STABLE" ]; then
+			docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
+		fi
 		
 		#  Push the images
 		echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin docker.io
 		docker push docker.io/dlk3/ntopng-udm:latest
 		docker push docker.io/dlk3/ntopng-udm:$VERSION
-		#podman push docker.io/dlk3/ntopng-udm:stable
+		if [ ! -z "$STABLE" ]; then
+			podman push docker.io/dlk3/ntopng-udm:stable
+		fi
 		docker logout docker.io
 		
 		#  Clean up
@@ -114,8 +135,11 @@ else
 	tar -czf ${HOME}/rpmbuild/SOURCES/nDPI.tar.gz nDPI
 	rm -fr nDPI
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' ${HOME}/rpmbuild/SPECS/ntopng.spec)
-	#git clone https://github.com/ntop/${NAME}.git --branch=5.2.1
-	git clone https://github.com/ntop/${NAME}.git
+	$BRANCH=""
+	if [ ! -z "$STABLE" ]; then
+		BRANCH="--branch=$STABLE"
+	fi
+	git clone https://github.com/ntop/${NAME}.git $BRANCH
 	tar -czf ${HOME}/rpmbuild/SOURCES/${NAME}.tar.gz ${NAME}
 	rm -fr ${NAME}
 
