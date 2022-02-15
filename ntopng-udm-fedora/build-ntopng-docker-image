@@ -46,7 +46,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if $DEBUG; then
 			OPT="-it"
 		fi
-		docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
+		/usr/bin/docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
@@ -65,12 +65,12 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if $DEBUG; then
 			OPT="-it"
 		fi
-		docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
+		/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
-		echo "That took $(elapsed $STARTTIME)"
+		echo "That took $(/usr/local/bin/elapsed $STARTTIME)"
 		
 		#  Just for the hell of it, send the SRPM to COPR to be built there
-		copr build --nowait dlk/rpms ${HOME}/rpmbuild/SRPMS/ntopng*
+		/usr/bin/copr build --nowait dlk/rpms ${HOME}/rpmbuild/SRPMS/ntopng* || true
 		
 		#  Build the container
 		echo "Starting container build at $(date +%H:%m:%S)"
@@ -78,30 +78,30 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
 		VERSION=$( ls ntopng*.aarch64.rpm | sed 's/"//g;s/ntopng-\([^-]*\)-.*$/\1/' )
-		docker buildx build $OPT --no-cache --platform=linux/arm64 -t docker.io/dlk3/ntopng-udm:$VERSION -t docker.io/dlk3/ntopng-udm:latest .
+		/usr/bin/docker buildx build $OPT --no-cache --platform=linux/arm64 -t docker.io/dlk3/ntopng-udm:$VERSION -t docker.io/dlk3/ntopng-udm:latest .
 		if [ ! -z "$STABLE" ]; then
-			docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
+			/usr/bin/docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
 		fi
 		
 		#  Push the images
-		echo "$DOCKER_PASSWORD" | docker login --username dlk3 --password-stdin docker.io
-		docker push docker.io/dlk3/ntopng-udm:latest
-		docker push docker.io/dlk3/ntopng-udm:$VERSION
+		echo "$DOCKER_PASSWORD" | /usr/bin/docker login --username dlk3 --password-stdin docker.io
+		/usr/bin/docker push docker.io/dlk3/ntopng-udm:latest
+		/usr/bin/docker push docker.io/dlk3/ntopng-udm:$VERSION
 		if [ ! -z "$STABLE" ]; then
-			podman push docker.io/dlk3/ntopng-udm:stable
+			/usr/bin/docker push docker.io/dlk3/ntopng-udm:stable
 		fi
-		docker logout docker.io
+		/usr/bin/docker logout docker.io
 		
 		#  Clean up
-		docker image prune --force
+		/usr/bin/docker image prune --force
 		echo "Container build complete at $(date +%H:%m:%S)"
-		echo "The entire process took $(elapsed $STARTTIME)"
+		echo "The entire process took $(/usr/local/bin/elapsed $STARTTIME)"
 	fi
 	sudo systemctl stop docker
 
 else
 
-	#  This section of the script runs in the podman container to build the ntopng 
+	#  This section of the script runs in the docker container to build the ntopng 
 	#  RPM packages.
 
 	#  The resulting packages will be copied to the $HOME directory of the user
@@ -135,7 +135,7 @@ else
 	tar -czf ${HOME}/rpmbuild/SOURCES/nDPI.tar.gz nDPI
 	rm -fr nDPI
 	NAME=$(sed -n 's/^Name:[[:space:]]*//p' ${HOME}/rpmbuild/SPECS/ntopng.spec)
-	$BRANCH=""
+	BRANCH=""
 	if [ ! -z "$STABLE" ]; then
 		BRANCH="--branch=$STABLE"
 	fi
