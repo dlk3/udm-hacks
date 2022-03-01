@@ -37,15 +37,15 @@ smartthings_location_name = 'Home'
 #  The List of Unifi cameras to be contolled.
 #  The names are the names they've been given in the Unifi Protect app.
 #  The recording mode is the mode that they should use when they are set to record.
-#  Possible choices are: "always", "motion", and "smartDetect."  The "never" mode is used to turn off recording.
+#  Possible choices are: "always" and "detections".  The "never" mode is used to turn off recording.
 camera_list = [
 	{
 		'name': 'Living Room',
-		'recording_mode': 'motion'
+		'recording_mode': 'detections'
 	},
 	{
 		'name': 'Downstairs',
-		'recording_mode': 'motion'
+		'recording_mode': 'detections'
 	}
 ]
 
