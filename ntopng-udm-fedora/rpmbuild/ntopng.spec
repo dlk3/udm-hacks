@@ -19,9 +19,9 @@ Source3:	%{name}.service
 Source4:	%{name}.sysconfig
 #Patch0:	ntopng-utils-manage-config.patch
 
-Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
+Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib, hiredis
 
-BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
+BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel, hiredis-build
 
 
 %description
@@ -88,6 +88,8 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 
 %changelog
+* Tue Apr 26 2022 David King <dave@daveking.com>
+	Add hiredis package dependency
 * Sat Feb 05 2022 David King <dave@daveking.com>
 	Update version number to 5.3.x (unstable)
 * Thu Feb 03 2022 David King <dave@daveking.com>
