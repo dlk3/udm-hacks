@@ -20,9 +20,9 @@
 start_off_hour = 7
 end_off_hour = 23
 
-#  The URL of the Unifi Dream Machine that manages the cameras.  Use "https://ubnt"
+#  The URL of the Unifi Dream Machine that manages the cameras.  Use "https://localhost"
 #  when running this script on the UDM itself.
-udm_url = 'https://ubnt'
+udm_url = 'https://localhost'
 
 #  My login credentials for the Unifi Dream Machine
 udm_username = ''
@@ -67,7 +67,7 @@ def log(message):
 		with open(opts.logfile, 'a') as f:
 			f.write('{} {}\n'.format(timestamp, message))
 	if not opts.quiet:
-		print '{} {}'.format(timestamp, message)
+		print('{} {}'.format(timestamp, message))
 
 #  Return true if the SmatThings location mode is "away".  Requires the location
 #  name and a SmartThings API token.
@@ -130,11 +130,13 @@ def setRecording(udm_url, udm_username, udm_password, camera_list, action):
 			headers = {
 				'Content-Type': 'application/json; charset=utf-8',
 				'Cookie': cookie + ';',
-				#  The x-csrf-token is critical, without it any attempts to change
-				#  any settings will fail with a "404 Not Found" error.  This token
-				#  is encoded into, and must be extracted from, the TOKEN cookie.
-				'x-csrf-token' : json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))['csrfToken']
 			}
+			#  If the token cookie contains a x-csrf-token value, this must be decoded
+			#  and passed in the request headers otherwise any attempt to change any
+			#  settings will fail with a "404 Not Found" error.
+			decoded_token = json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))
+			if 'csrfToken' in decoded_token:
+				headers['x-csrf-token'] = decoded_token['csrfToken']
 
 	#  Get the information for all of the cameras this UDM knows about
 	r = requests.get(udm_url + '/proxy/protect/api/bootstrap', headers=headers, verify=False)

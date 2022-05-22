@@ -163,12 +163,14 @@ for cookie in r.headers['Set-Cookie'].split(';'):
 	if cookie.startswith('TOKEN='):
 		headers = {
 			'Content-Type': 'application/json; charset=utf-8',
-			'Cookie': cookie + ';',
-			#  The x-csrf-token is critical, without it any attempts to change
-			#  any settings will fail with a "404 Not Found" error.  This token
-			#  is encoded into, and must be extracted from, the TOKEN cookie.
-			'x-csrf-token' : json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))['csrfToken']
+			'Cookie': cookie + ';'
 		}
+		#  If the token cookie contains a x-csrf-token value, this must be decoded
+		#  and passed in the request headers otherwise any attempt to change any
+		#  settings will fail with a "404 Not Found" error.
+		decoded_token = json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))
+		if 'csrfToken' in decoded_token:
+			headers['x-csrf-token'] = decoded_token['csrfToken']
 
 #  Update JSON file containing the list of cameras and get that list
 cameras = update_camera_dict(camera_file, udm_url, headers)
