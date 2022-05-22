@@ -40,7 +40,7 @@ cd /mnt/data/openvpn/server
           created.  I called mine "OpenVPN CA"
 ../easyrsa/easyrsa build-server-full server nopass
 ../easyrsa/easyrsa gen-dh
-openvpn --genkey --secret pki/private/ta.key
+openvpn --genkey secret pki/private/ta.key
 ```
 The server certificates I created here and the client certificates I'll create later are good for 825 days.  Once that time expires I'll need to come back and renew all of the certificates I've issued.
 
