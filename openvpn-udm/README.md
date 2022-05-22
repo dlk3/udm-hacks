@@ -62,6 +62,10 @@ push "route 192.168.1.0 255.255.255.0"
 ```
 There needs to be a line like this for every LAN or VLAN in my local network that I want my clients to be able to access.
 
+## The Management Option In The Server Configuration File
+
+The management option is defined in the config file as a way to provide the Nagios network monitoring server that I use with an interface it can use to check the status of the openvpn daemon.  You could remove this option.  If not, be sure to create a pw-file containing a password to authenticate access through the management port.
+
 ## Creating a boot script to start the OpenVPN server
 
 I want the OpenVPN server to start automatically every time my UDM boots up.  John "boostchicken" D. has made a great little utility that makes this easy.  Go to his [on-boot-script GitHub repository](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) and follow the very simple instructions found there to get it installed.
