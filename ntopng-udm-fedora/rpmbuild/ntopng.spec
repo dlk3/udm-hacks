@@ -6,7 +6,7 @@
 
 Name:		ntopng
 #Version:	5.2.1
-Version:	5.3.%(date +%y%m%d)
+Version:	5.5.%(date +%y%m%d)
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -19,9 +19,9 @@ Source3:	%{name}.service
 Source4:	%{name}.sysconfig
 #Patch0:	ntopng-utils-manage-config.patch
 
-Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib, hiredis
+Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
-BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel, hiredis-devel
+BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, hiredis-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
 
 
 %description
@@ -88,6 +88,8 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 
 %changelog
+* Tue Aug 09 2022 David King <dave@daveking.com>
+    Update version number to 5.5.x (unstable) 
 * Tue Apr 26 2022 David King <dave@daveking.com>
 	Add hiredis package dependency
 * Sat Feb 05 2022 David King <dave@daveking.com>
