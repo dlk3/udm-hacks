@@ -11,6 +11,9 @@ DEBUG=false
 #  and the CHANGELOG in the SPEC file
 #STABLE='5.2.1'
 
+#  Name of the Fedora container we use as the base for our container build
+FEDORA_CONTAINER="arm64v8/fedora:35"
+
 #  Keep the container running and give me a shell prompt when something bad happens
 if $DEBUG; then
 	trap /bin/sh ERR
@@ -46,8 +49,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if $DEBUG; then
 			OPT="-it"
 		fi
-		#/usr/bin/docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/library/fedora:latest "$(realpath "$0")" ${HOME}
-		/usr/bin/docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/library/fedora:35 "$(realpath "$0")" ${HOME}
+		/usr/bin/docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/${FEDORA_CONTAINER} "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
@@ -66,8 +68,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if $DEBUG; then
 			OPT="-it"
 		fi
-		#/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:latest "$(realpath "$0")" ${HOME}
-		/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/arm64v8/fedora:35 "$(realpath "$0")" ${HOME}
+		/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/${FEDORA_CONTAINER} "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(/usr/local/bin/elapsed $STARTTIME)"
 		
@@ -84,7 +85,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if [ ! -z "$STABLE" ]; then
 			/usr/bin/docker tag dlk3/ntopng-udm:latest docker.io/dlk3/ntopng-udm:stable
 		fi
-		/usr/bin/docker rmi arm64v8/fedora:latest
+		/usr/bin/docker rmi ${FEDORA_CONTAINER}
 		
 		#  Push the images
 		echo "$DOCKER_PASSWORD" | /usr/bin/docker login --username dlk3 --password-stdin docker.io
