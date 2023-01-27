@@ -1,131 +1,24 @@
 #!/usr/bin/env python
 
-#  Copyright (C) 2021  David King <dave@daveking.com>
+#  Turn off the POE power to a list of cameras that are being controlled by a Ubiquiti 
+#  Dream Machine unless SmartThings says that the location mode is "Away."
+
+#  Copyright (C) 2023  David King <dave@daveking.com>
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public License,
 #  v. 2.0.  If a copy of the MPL was not distbuted with this file, You can
 #  obtain one at https://mozilla.org/MPL/2.0/.
 
-#  Toggle POE power for a specific camera
+#  Configure logging
+import logging
+log_datefmt = '%d-%b-%y %H:%M:%S'
+logging.basicConfig(format='%(asctime)s: %(levelname)s: %(message)s', datefmt=log_datefmt, level=logging.INFO)
 
-#############################################################################################################
-#  C o n f i g u r a t i o n   S e c t i o n
-#############################################################################################################
-
-#  The URL of the Unifi Dream Machine that manages the cameras.  Use "https://ubnt"
-#  when running this script on the UDM itself.
-udm_url = 'https://firewall.localdomain'
-
-#  Name of the file in which the list of cameras is kept.  (The UDM forgets
-#  about cameras after a while when we turn off their POE.)
+#  Import dependencies
 import os
-camera_file = os.path.expanduser('~/.config/camera_poe_ctl.json')
-
-#############################################################################################################
-#############################################################################################################
-
-import datetime
+import sys
 from optparse import OptionParser
 import json
-import base64
-import datetime
-import subprocess
-
-#  Write messages to the console and log file
-#  Later Python versions may require that the print statement used in this function be modified.
-def log(message):
-	global opts
-	timestamp = datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')
-	if opts.logfile:
-		with open(opts.logfile, 'a') as f:
-			f.write('{} {}\n'.format(timestamp, message))
-	if not opts.quiet:
-		print('{} {}'.format(timestamp, message))
-
-#  Do a system notification
-def notify_send(title, text):
-	global opts
-	if opts.notify:
-		subprocess.run('notify-send -i system-shutdown "{}" "{}"'.format(title, text), shell=True)
-
-#  The UDM does not remember cameras after they have been powered off for a 
-#  while.  We will maintain a list of our cameras in a file.
-def update_camera_dict(camera_json_filename, url, headers):
-
-	#  Read in dictionary file, if it exists
-	if os.path.exists(camera_json_filename):
-		with open(camera_json_filename, 'r') as f:
-			camera_json = json.load(f)
-	else:
-		camera_json = []
-		
-	#  Get the information for all of the cameras this UDM currently knows about
-	r = requests.get(url + '/proxy/protect/api/bootstrap', headers=headers, verify=False)
-	if r.status_code != 200:
-		text = 'ERROR: The request for camera information failed: ' + r.text
-		log(text)
-		notify_send('Request Error', text)
-		exit(r.status_code)
-	for camera in r.json()['cameras']:
-		found = False
-		for c in camera_json:
-			if c['name'].upper() == camera['name'].upper():
-				found = True
-				c['mac'] = camera['mac'].upper()
-				c['lastseen'] = camera['lastSeen']
-				break
-		if not found:
-			camera_json.append({
-				'name': camera['name'],
-				'mac': camera['mac'].upper(),
-				'lastseen': camera['lastSeen']
-			})
-
-	#  Update the camera list with the MAC address of the switchs and the 
-	#  ports on those switches that the cameraa are connected to.
-	r = requests.get(udm_url + '/proxy/network/api/s/default/stat/sta', headers=headers, verify=False)
-	if r.status_code != 200:
-		text = 'ERROR: The request for network client information failed: ' + r.text
-		log(text)
-		notify_send('Request Error', text)
-		exit(r.status_code)
-	for client in r.json()['data']:
-		client_mac = client['mac'].replace(":","").upper()
-		for c in camera_json:
-			if client_mac == c['mac']:
-				if 'sw_mac' in client:
-					c['switch_mac'] = client['sw_mac'].replace(":","").upper()
-				if 'sw_port' in client:
-					c['port'] = client['sw_port']
-				break
-			
-	with open(camera_json_filename, 'w') as f:
-		json.dump(camera_json, f)		
-		
-	return camera_json
-	
-#  Define command-line options to turn off console output and to log progress into a file
-cmdline = OptionParser(usage="usage: %prog -u UDM_userid -p UDM_password <camera_name>|<switch_mac>:<switch_port> [on|off|query]", description='Set security camera PoE power on or off')
-cmdline.add_option('-u', '--userid', dest='userid', help='Your UDM login userid [required]')
-cmdline.add_option('-p', '--password', dest='password', help='Your UDM login password [required]')
-cmdline.add_option('-n', '--notify', action='store_true', dest='notify', default=False, help='Send system notifications when PoE changes are made or errors occur')    
-cmdline.add_option('-q', '--quiet', action='store_true', dest='quiet', default=False, help='Do not print any log messages on the console')    
-cmdline.add_option('-l', '--log', dest='logfile', metavar='FILE', help='Write log messages into this file')
-opts, args = cmdline.parse_args()
-if not opts.userid or not opts.password:
-	cmdline.error('UDM userid and password must be provided on the command line.')
-action = None
-query = None
-if len(args) > 1:
-	action = args[1].upper()
-	if action != 'ON' and action != 'OFF' and action != 'QUERY':
-		cmdline.error('If an action is specified it can only be either "on", "off" or "query"')
-	if action == 'ON':
-		action = True
-	elif action == 'OFF':
-		action = False
-	elif action == 'QUERY':
-		query = True
 
 #  Handle error that occurs if the requests module is not installed
 try:
@@ -136,149 +29,104 @@ try:
 	from requests.packages.urllib3.exceptions import InsecureRequestWarning
 	requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except:
-	log('ERROR: Unable to import the Python "requests" module.  Is it installed?')
+	logging.error('Unable to import the Python "requests" module.  Is it installed?')
 	exit(1)
-	
-#  Login to UDM
-data = {
-	'username': opts.userid,
-	'password': opts.password,
-	'rememberMe': False
-}
+
+#  Handle error that occurs if my custom udm API module is not present
 try:
-	r = requests.post(udm_url + '/api/auth/login', json=data, verify=False)
-except Exception as e:
-	text = 'ERROR: Unexpected exception while logging in to {}\n{}'.format(udm_url, e)
-	log(text)
-	notify_send('Request Exception', text)
-	exit(1)
-if r.status_code != 200:
-	text = 'ERROR: The login failed: ' + r.text
-	log(text)
-	notify_send('Login Error', text)
-	exit(r.status_code)
-	
-#  Set authorization cookies for all subsequent requests
-for cookie in r.headers['Set-Cookie'].split(';'):
-	if cookie.startswith('TOKEN='):
-		headers = {
-			'Content-Type': 'application/json; charset=utf-8',
-			'Cookie': cookie + ';'
-		}
-		#  If the token cookie contains a x-csrf-token value, this must be decoded
-		#  and passed in the request headers otherwise any attempt to change any
-		#  settings will fail with a "404 Not Found" error.
-		decoded_token = json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))
-		if 'csrfToken' in decoded_token:
-			headers['x-csrf-token'] = decoded_token['csrfToken']
+	import udm
+except:
+	logging.error('Unable to import the Python "udm" module that ships with this script.')
+	exit(1)	
 
-#  Update JSON file containing the list of cameras and get that list
-cameras = update_camera_dict(camera_file, udm_url, headers)
+#  Return true if the SmartThings location mode is "Away".
+def smartthingsAway(url, location_name, api_token):
 
-#  Camera name from command line
-camera = ''
-if len(args) > 0:
-	camera = args[0]
-else:
-	cmdline.print_help()
-	print("\nList of cameras:")
-	for c in cameras:
-		print("\t{}".format(c['name']))
-	exit(1)
-
-#  If the camera name contains a colon, then it's actually the switch_mac and
-#  the switch_port values concatenated together
-switch_mac = None
-if ':' in camera:
-	switch_mac, switch_port = camera.split(':')
-	switch_port = int(switch_port)
-	camera = '(specified)'
-else:
-	#  Get the switch_mac and switch_port from the cameras list, based on the 
-	#  camera name
-	for c in cameras:
-		if camera.upper() == c['name'].upper():
-			switch_mac = c['switch_mac']
-			switch_port = c['port']
-			break
-
-	#  If this is just a query, show the results
-	if query:
-		text = 'Camera Name: {}\nSwitch MAC Address: {}\nSwitch Port: {}'.format(camera, switch_mac, switch_port)
-		log(text)
-		notify_send('Query Results', text)
-		exit()
-	
-#  Get the switch configuration details
-r = requests.get(udm_url + '/proxy/network/api/s/default/stat/device', headers=headers, verify=False)
-if r.status_code != 200:
-	text = 'ERROR: The request for switch configuration information failed: ' + r.text
-	log(text)
-	notify_send('Request Error', text)
-	exit(r.status_code)
-
-device_config = ''
-device_id = ''
-for device in r.json()['data']:
-	device_mac = device['mac'].replace(":","").upper()
-	if device_mac == switch_mac:
-		device_config = device
-		device_id = device['_id']
-
-if device_config == '':
-	text = 'Unable to get the configuration information for the switch that "{}" is connected to'.format(camera)
-	log(text)
-	notify_send('Unable ToGet Switch Configuration', text)
-	exit(1)
-
-#  Get current POE status from the switch's port_table and define a port_override
-#  json dictionary for the camera port
-for port in device_config['port_table']:
-	if port['port_idx'] == switch_port:
-		try:
-			poe_status = port['poe_enable']
-			port_override = {
-				'autoneg': port['autoneg'],
-				'full_duplex': port['full_duplex'],
-				'port_idx': port['port_idx'],
-				'port_security_mac_address': [],
-				'portconf_id': port['portconf_id'],
-				'speed': port['speed']
-			}
-		except KeyError as e:
-			text = 'Missing port attribute: {}'.format(e)
-			log(text)
-			notify_send('Unable To Determine PoE Status', text)
-			exit(1)
-		except Exception as e:
-			log('ERROR: Unexpected exception: {}'.format(e))
-			notify_send('Unexpected Exception', e)
-			exit(1)
-
-#  Submit request to change the port's poe_mode based on current status and action specified 
-if action == None:
-	action = not poe_status
-if poe_status and action:
-	log('"{}" camera PoE is already on, nothing to do'.format(camera))
-elif not poe_status and not action:
-	log('"{}" camera PoE is already off, nothing to do'.format(camera))
-else:
-	if action:
-		log('Turning PoE on for {} camera'.format(camera))
-		port_override['poe_mode'] = 'auto'
-		title = 'Turned On {} Camera'.format(camera)
-		text = 'PoE power for the {} camera has been turned on'.format(camera)
-	else:
-		log('Turning PoE off for {} camera'.format(camera))
-		port_override['poe_mode'] = 'off'
-		title = 'Turned Off {} Camera'.format(camera)
-		text = 'PoE power for the {} camera has been turned off'.format(camera)
-	data = {
-		'port_overrides': [port_override]
-	} 
-	r = requests.put(udm_url + '/proxy/network/api/s/default/rest/device/' + device_id, json=data, headers=headers, verify=False)
+	headers = {
+		'Authorization': 'Bearer ' + api_token
+	}
+	   
+	#  Get the locationId for the location with the specified name
+	logging.debug('Getting locationId from SmartThings for "{}" location'.format(location_name))
+	locationId = ''
+	r = requests.get(url + 'locations', headers=headers)
 	if r.status_code != 200:
-		log('ERROR: The request to set poe_mode for the "' + camera + '" camera failed: ' + r.text)
-		exit(r.status_code)
-	log('Successfully completed')
-	notify_send(title, text)
+		logging.error(r.text)
+		return False
+	for item in r.json()['items']:
+		if item['name'] == location_name:
+			locationId = item['locationId']
+			logging.debug('SmartThings locationId: {}'.format(locationId))
+	if locationId == '':
+		logging.error('Unable to get the locationId for the location named "{}"'.format(location_name))
+		return False
+
+	#  Get the "mode" at that location: Home, Away, Night
+	logging.debug('Getting current location mode for "{}" location'.format(location_name))
+	location_mode = ''
+	r = requests.get(url + 'locations/' + locationId + '/modes/current', headers=headers)
+	if r.status_code != 200:
+		logging.error(r.text)
+		return False
+	location_mode = r.json()['name']
+	logging.info('SmartThings location "{}" is in mode "{}"'.format(location_name, location_mode))
+	if location_mode == '':
+		logging.error('Unable to get the curreent mode for the location named "{}"'.format(location_name))
+		return False
+	
+	if location_mode == 'Away':
+		return True
+	return False
+
+if __name__ == "__main__":
+
+	#  Define command-line options for the config file and debugging
+	config_fn = os.path.abspath(sys.argv[0]) + '.conf'
+	cmdline = OptionParser(usage="usage: %prog [-d | --debug]", description='Only power on certain security cameras attached to a Ubiquity Dream Machine when SmartThings says that a location is in "Away" mode.')
+	cmdline.add_option('-c', '--config', dest='conffile', default=config_fn, help='Full path to configuration file.  Default: {}'.format(config_fn))
+	cmdline.add_option('-d', '--debug', action='store_true', dest='debug', default=False, help='Write debugging messages to the log file specified in the config file')
+	opts, args = cmdline.parse_args()
+	log = logging.getLogger()
+	if opts.debug:
+		log.setLevel(logging.DEBUG)
+
+	#  Execute the configuration file
+	logging.debug('Executing the configuration file: {}'.format(opts.conffile))
+	try:
+		with open(opts.conffile) as f:
+			code = compile(f.read(), opts.conffile, 'exec')
+			exec(code)
+	except FileNotFoundError:
+		logging.error('Config file "{}" not found'.format(opts.conffile))
+		exit(1)
+	except:
+		logging.exception('Unable to execute config file "{}"'.format(opts.conffile), exc_info=True)
+		exit(1)
+		
+	#  If config file specified a log file then reconfigure logging
+	if logFileName != '':
+		try:
+			if log.hasHandlers():
+				log.handlers.clear()
+			handler = logging.FileHandler(logFileName)
+			formatter = logging.Formatter(fmt='%(asctime)s: %(levelname)s: %(message)s', datefmt=log_datefmt)
+			handler.setFormatter(formatter)
+			log.addHandler(handler)
+		except:
+			logging.eeception('Unexpected exception while setting log file to {}'.format(config('logFileName')), exc_info=True)
+			exit(1)
+	
+	#  Connect to the UDM
+	udm = udm.UDM(udmHostName, udmUsername, udmPassword, cameraDetailsFile)
+
+	#  If SmartThings says location mode is "Away," turn on the cameras.  Otherwise, turn
+	#  them off.
+	away = smartthingsAway(smartthingsURL, smartthingsLocationName, smartthingsToken)
+	for camera_name in cameraList:
+		for udm_camera in udm.cameras:
+			if camera_name == udm_camera.name:
+				if away:
+					udm_camera.setPOE('ON')
+				else:
+					udm_camera.setPOE('OFF')
+				break

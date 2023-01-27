@@ -1,8 +1,13 @@
-# Turn On/Off PoE Power For Cameras
+# Turn Off POE Power To Selected UDM Cameras Unless SmartThings Says Everyone is Away
 
-This script will enable or disable PoE power on ports on a Unifi switch that have Unifi cameras plugged into them.  
+For privacy reasons I want to keep my indoor cameras turned off unless the house is empty.  We have already set up SmartThings to use our mobile devices as sensors so that it knows when we are home or away.  I have defined a SmartThings rotine that switches the "Home" location to "Away" mode when we are gone.  This script queries the SmartThings location mode and turns on the cameras listed in its configuration file when we are away and turns them back off when we arrive back home.
 
-1.  The script queries the Protect application on the Unifi UDM to get the MAC address of the camera named on the command line.
-2.  The script then queries the Network application on the Unifi UDM to find the switch port that is connected to a client with that MAC address.
-3.  Finally the script turns PoE power on that port either on or off as was specified on the command line.  If no specific action was specified on the command line then the script toggles the PoE setting, turning power off it is currently on, and on if it is currently off.
-4.  In my environment It takes about five seconds for the switch to receive and process the port configuration change.  The switch resets when the change is processed and all of the client devices on that switch can lose their current network connections when that happens.
+This script can be run on the UDM itself, or on another computer in the local network.  
+
+These files all need to be installed together in the same directory:
+
+* **camera_poe_ctl** - the main script file.
+* **camera_poe_ctl.conf** - the configuration file.  This file must be edited before use.  See the comments in the file for guidance.
+* **udm.py** - a custom UDM API module that I created for this script.
+
+I run this script on my UDM every 10 minutes using crond.  I do this by using John D's [on-boot-script](https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script) utility to construct a custom cron.d file and then restart the cron.d service.  See the **50-camera-poe-ctl-cron.sh** file, the on-boot.d script that implements this.

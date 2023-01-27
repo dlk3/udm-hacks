@@ -12,6 +12,7 @@ DEBUG=false
 #STABLE='5.2.1'
 
 #  Name of the Fedora container we use as the base for our container build
+#FEDORA_CONTAINER="arm64v8/fedora:latest"
 FEDORA_CONTAINER="arm64v8/fedora:35"
 
 #  Keep the container running and give me a shell prompt when something bad happens

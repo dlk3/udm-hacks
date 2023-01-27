@@ -1,0 +1,4 @@
+*.old
+*.pyc
+__pycache__
+camera_poe_ctl.camera_list.json
