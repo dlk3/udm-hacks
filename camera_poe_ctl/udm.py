@@ -134,7 +134,8 @@ class UDM:
 				_device_list.append(Device(self.session, self.url, device))
 			logging.debug('Network client devices:\n{}'.format(json.dumps(_r.json()['data'], indent=4)))
 		else:
-			logging.error('The request for network client information failed: ' + _r.text)
+			logging.error('The request for network client information failed with status code = {}'.format(_r.status_code))
+			logging.error('Response text: {}'.format(_r.text))
 
 		return _device_list
 	
@@ -162,7 +163,8 @@ class UDM:
 		logging.debug('Getting list of cameras from UDM Protect app')
 		_r = self.session.get(self.url + '/proxy/protect/api/bootstrap', verify=False)
 		if _r.status_code != 200:
-			logging.error('The request for camera information failed: ' + _r.text)
+			logging.error('The request for camera information failed with status code = {}'.format(_r.status_code))
+			logging.error('Response text: {}'.format(_r.text))
 			return
 		for _camera in _r.json()['cameras']:
 			_found = False
@@ -238,7 +240,8 @@ class Camera:
 		#  Get the switch configuration details
 		_r = self.session.get(self.url + '/proxy/network/api/s/default/stat/device', verify=False)
 		if _r.status_code != 200:
-			logging.error('The request for switch configuration information failed: {}'.format(_r.text))
+			logging.error('The request for switch configuration information failed with status code = {}'.format(_r.status_code))
+			logging.error('Response text: {}'.format(_r.text))
 			return
 		#  Find the switch this camera is connected to
 		for _device in _r.json()['data']:
@@ -312,7 +315,8 @@ class Camera:
 			logging.debug('Sending POE request for {} camera:\n{}'.format(self.name, json.dumps(_data, indent=4)))
 			_r = self.session.put(self.url + '/proxy/network/api/s/default/rest/device/' + self.switch_id, json=_data, verify=False)
 			if _r.status_code != 200:
-				logging.error('POE {} request failed: {}'.format(desired_state, _r.text))
+				logging.error('POE {} request failed with status code = {}'.format(desired_state, _r.status_code))
+				logging.error('Response text: {}'.format(_r.text))
 				return False
 			else:
 				logging.info('{} camera powered {}'.format(self.name, desired_state.lower()))

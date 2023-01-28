@@ -2,7 +2,7 @@ Hacks in this repository:
 
 __away-recording__ - Integrate Unifi Protect With SmartThings presence detection to only record camera events when I'm away from home or asleep.
 
-__camera_poe_ctl__ - Turn on/off PoE power on a Unifi switch port that is connected to a Unifi camera
+__camera_poe_ctl__ - Power off my interior cameras when SmartThings says someone is at home.  Power the cameras back on when everyone is gone.
 
 __openvpn-udm__ - How to configure OpenVPN on the UDM as a VPN server
 

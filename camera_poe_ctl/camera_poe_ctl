@@ -28,15 +28,21 @@ try:
 	#  need to be modified if you are using a later version of the requests module.
 	from requests.packages.urllib3.exceptions import InsecureRequestWarning
 	requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except:
+except ModuleNotFoundError:
 	logging.error('Unable to import the Python "requests" module.  Is it installed?')
+	exit(1)
+except:
+	logging.exception('Unexpected exception while importing requests module:', exc_info=True)
 	exit(1)
 
 #  Handle error that occurs if my custom udm API module is not present
 try:
 	import udm
-except:
+except ModuleNotFoundError:
 	logging.error('Unable to import the Python "udm" module that ships with this script.')
+	exit(1)	
+except:
+	logging.exception('Unexpected exception while importing udm module:', exc_info=True)
 	exit(1)	
 
 #  Return true if the SmartThings location mode is "Away".
@@ -59,6 +65,8 @@ def smartthingsAway(url, location_name, api_token):
 			logging.debug('SmartThings locationId: {}'.format(locationId))
 	if locationId == '':
 		logging.error('Unable to get the locationId for the location named "{}"'.format(location_name))
+		logging.error('HTTP status code = {}'.format(r.status_code))
+		logging.error('Request response text: {}'.format(r.text))
 		return False
 
 	#  Get the "mode" at that location: Home, Away, Night
@@ -72,6 +80,8 @@ def smartthingsAway(url, location_name, api_token):
 	logging.info('SmartThings location "{}" is in mode "{}"'.format(location_name, location_mode))
 	if location_mode == '':
 		logging.error('Unable to get the curreent mode for the location named "{}"'.format(location_name))
+		logging.error('HTTP status code = {}'.format(r.status_code))
+		logging.error('Request response text: {}'.format(r.text))
 		return False
 	
 	if location_mode == 'Away':
