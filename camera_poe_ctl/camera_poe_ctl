@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 
-#  Turn off the POE power to a list of cameras that are being controlled by a Ubiquiti 
-#  Dream Machine unless SmartThings says that the location mode is "Away."
-
 #  Copyright (C) 2023  David King <dave@daveking.com>
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public License,
 #  v. 2.0.  If a copy of the MPL was not distbuted with this file, You can
 #  obtain one at https://mozilla.org/MPL/2.0/.
+
+'''
+Turn on the POE power to a list of cameras that are being controlled by a Ubiquiti 
+Dream Machine when SmartThings says that the location mode is "Away."  Turn it off
+when the location mode is something other than "Away."
+'''
 
 #  Configure logging
 import logging
@@ -116,7 +119,7 @@ if __name__ == "__main__":
 	if opts.debug:
 		log.setLevel(logging.DEBUG)
 
-	#  Default configuration settings, overridden by what's in the configuration file
+	#  Default configuration settings.  Can be overridden in the configuration file.
 	udmHostName = 'localhost.localdomain'
 	udmUsername = ''                                                       
 	udmPassword = ''                                                 
@@ -157,14 +160,14 @@ if __name__ == "__main__":
 			handler.setFormatter(formatter)
 			log.addHandler(handler)
 		except:
-			logging.eeception('Unexpected exception while setting log file to {}'.format(config('logFileName')), exc_info=True)
+			logging.eeception('Unexpected exception while switching logging to file: "{}"'.format(config('logFileName')), exc_info=True)
 			exit(1)
 	
 	#  Connect to the UDM
 	udm = udm.UDM(udmHostName, udmUsername, udmPassword, cameraDetailsFile)
 
 	#  If SmartThings says location mode is "Away," turn on the cameras.  Otherwise, turn
-	#  them off.
+	#  them off.  Send an email if the change succeeded.
 	away = smartthingsAway(smartthingsURL, smartthingsLocationName, smartthingsToken)
 	for camera_name in cameraList:
 		for udm_camera in udm.cameras:
