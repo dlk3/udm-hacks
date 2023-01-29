@@ -78,7 +78,7 @@ def smartthingsAway(url, location_name, api_token):
 		logging.error(r.text)
 		return False
 	location_mode = r.json()['name']
-	logging.info('SmartThings location "{}" is in mode "{}"'.format(location_name, location_mode))
+	logging.info('SmartThings "{}" location is in "{}" mode.'.format(location_name, location_mode))
 	if location_mode == '':
 		logging.error('Unable to get the curreent mode for the location named "{}"'.format(location_name))
 		logging.error('HTTP status code = {}'.format(r.status_code))
