@@ -19,6 +19,7 @@ import os
 import sys
 from optparse import OptionParser
 import json
+import smtplib
 
 #  Handle error that occurs if the requests module is not installed
 try:
@@ -88,6 +89,21 @@ def smartthingsAway(url, location_name, api_token):
 		return True
 	return False
 
+#  Send an email message to a list of addresses
+def sendMail(address_list=[], message=''):
+	logging.debug('Sending email message:\n{}'.format(message))
+	try:
+		if len(address_list) > 0:
+			with smtplib.SMTP(smtpHost, port=smtpPort) as smtp:
+				if smtpStartTLS:
+					smtp.starttls()
+				smtp.login(smtpUserid, smtpPassword)
+				for address in address_list:
+					logging.debug('Sending email message to {}'.format(address))
+					smtp.sendmail(emailFromAddress, address, 'From: {}\nSubject: {}'.format(emailFromAddress, message))
+	except:
+		logging.exception('Unexpected exception while sending email:\nTo: {}\nMessage: {}'.format(address_list, message), exc_info=True)
+	
 if __name__ == "__main__":
 
 	#  Define command-line options for the config file and debugging
@@ -99,6 +115,24 @@ if __name__ == "__main__":
 	log = logging.getLogger()
 	if opts.debug:
 		log.setLevel(logging.DEBUG)
+
+	#  Default configuration settings, overridden by what's in the configuration file
+	udmHostName = 'localhost.localdomain'
+	udmUsername = ''                                                       
+	udmPassword = ''                                                 
+	smartthingsURL = 'https://api.smartthings.com/v1/'                            
+	smartthingsToken = ''                      
+	smartthingsLocationName = 'Home'                                               
+	cameraList = []                                       
+	emailAddressList = []                       
+	emailFromAddress = 'camera_poe_ctl@localhost.localdomain'                            
+	smtpHost = ''     
+	smtpPort = 25                                                               
+	smtpStartTLS = False                                                           
+	smtpUserid = ''                                              
+	smtpPassword = ''                                           
+	cameraDetailsFile = '~/camera_poe_ctl.camera_list.json'
+	logFileName = '' 
 
 	#  Execute the configuration file
 	logging.debug('Executing the configuration file: {}'.format(opts.conffile))
@@ -136,7 +170,9 @@ if __name__ == "__main__":
 		for udm_camera in udm.cameras:
 			if camera_name == udm_camera.name:
 				if away:
-					udm_camera.setPOE('ON')
+					if udm_camera.setPOE('ON'):
+						sendMail(emailAddressList, '{} camera powered on'.format(camera_name))
 				else:
-					udm_camera.setPOE('OFF')
+					if udm_camera.setPOE('OFF'):
+						sendMail(emailAddressList, '{} camera powered off'.format(camera_name))
 				break

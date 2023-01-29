@@ -190,11 +190,11 @@ class UDM:
 					try:
 						_c['switch_mac'] = _device.sw_mac
 					except:
-						_c['switch_mac'] = ''
+						pass
 					try:
 						_c['switch_port'] = _device.sw_port
 					except:
-						_c['switch_port'] = ''
+						pass
 					logging.debug('Updating network switch MAC and port number for {} camera\nMAC: {} Port: {}'.format(_c['name'], _c['switch_mac'], _c['switch_port']))
 					break
 		
@@ -220,8 +220,16 @@ class Device:
 		self.url = url
 		self._properties = properties
 		self.mac = properties['mac'].replace(":","").upper()
-		self.sw_mac = properties['sw_mac'].replace(":","").upper()
-		self.sw_port = properties['sw_port']
+		try:
+			self.sw_mac = properties['sw_mac'].replace(":","").upper()
+		except:
+			logging.error('Device with MAC = {} does not have a "sw_mac" attribute.  Setting to None.'.format(self.mac))
+			self.sw_mac = None
+		try:
+			self.sw_port = properties['sw_port']
+		except:
+			logging.error('Device with MAC = {} does not have a "sw_port" attribute.  Setting to None.'.format(self.mac))
+			self.sw_port = None
 		
 class Camera:
 	def __init__(self, session, url, properties):
@@ -237,6 +245,7 @@ class Camera:
 	#  Return the current POE status of the switch port this camera instance is
 	#  plugged into.  Returns True for "ON" and False for "OFF"
 	def getPOE(self):
+		logging.debug('Searching for the switch this camera is connected to, MAC = {}'.format(self.switch_mac))
 		#  Get the switch configuration details
 		_r = self.session.get(self.url + '/proxy/network/api/s/default/stat/device', verify=False)
 		if _r.status_code != 200:
@@ -248,9 +257,11 @@ class Camera:
 			_mac = _device['mac'].replace(":","").upper()
 			if _mac == self.switch_mac:
 				#  Find the port on this switch the camera is connected to
+				logging.debug('Found the switch')
+				logging.debug('Searching for the port this camera is plugged into, port #: {}'.format(self.switch_port))
 				for _port in _device['port_table']:
 					if _port['port_idx'] == self.switch_port:
-						logging.debug('Port details for {} camera:\n{}'.format(self.name, json.dumps(_port, indent=4)))
+						logging.debug('Found the port for {} camera.  Port details:\n{}'.format(self.name, json.dumps(_port, indent=4)))
 						try:
 							#  Add the POE status and device_id as attributes
 							self.switch_id = _device['_id']
@@ -322,4 +333,4 @@ class Camera:
 				logging.info('{} camera powered {}'.format(self.name, desired_state.lower()))
 				return True
 		
-		return True
+		return False
