@@ -164,7 +164,8 @@ class UDM:
 		_r = self.session.get(self.url + '/proxy/protect/api/bootstrap', verify=False)
 		if _r.status_code != 200:
 			logging.error('The request for camera information failed with status code = {}'.format(_r.status_code))
-			logging.error('Response text: {}'.format(_r.text))
+			if _r.text != '':
+				logging.error('Response text: {}'.format(_r.text))
 			return
 		for _camera in _r.json()['cameras']:
 			_found = False
@@ -223,13 +224,13 @@ class Device:
 		try:
 			self.sw_mac = properties['sw_mac'].replace(":","").upper()
 		except:
-			logging.error('Device with MAC = {} does not have a "sw_mac" attribute.  Setting to None.'.format(self.mac))
+			logging.debug('Device with MAC = {} does not have a "sw_mac" attribute.'.format(self.mac))
 			self.sw_mac = None
 		try:
 			self.sw_port = properties['sw_port']
 		except:
-			logging.error('Device with MAC = {} does not have a "sw_port" attribute.  Setting to None.'.format(self.mac))
-			self.sw_port = None
+			logging.debug('Device with MAC = {} does not have a "sw_port" attribute.'.format(self.mac))
+			self.sw_port = Nonew
 		
 class Camera:
 	def __init__(self, session, url, properties):
@@ -250,7 +251,8 @@ class Camera:
 		_r = self.session.get(self.url + '/proxy/network/api/s/default/stat/device', verify=False)
 		if _r.status_code != 200:
 			logging.error('The request for switch configuration information failed with status code = {}'.format(_r.status_code))
-			logging.error('Response text: {}'.format(_r.text))
+			if _r.text != '':
+				logging.error('Response text: {}'.format(_r.text))
 			return
 		#  Find the switch this camera is connected to
 		for _device in _r.json()['data']:
