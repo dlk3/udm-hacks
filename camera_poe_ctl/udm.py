@@ -135,7 +135,8 @@ class UDM:
 			logging.debug('Network client devices:\n{}'.format(json.dumps(_r.json()['data'], indent=4)))
 		else:
 			logging.error('The request for network client information failed with status code = {}'.format(_r.status_code))
-			logging.error('Response text: {}'.format(_r.text))
+			if _r.text != '':
+				logging.error('Response text: {}'.format(_r.text))
 
 		return _device_list
 	
