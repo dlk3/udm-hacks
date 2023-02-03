@@ -5,8 +5,8 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-#Version:	5.2.1
-Version:	5.5.%(date +%y%m%d)
+Version:	5.6
+#Version:	5.7.%(date +%y%m%d)
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -88,6 +88,8 @@ rm privkey.pem cert.pem ntopng-cert.pem
 
 
 %changelog
+* Thu Feb 02 2023 David King <dave@daveking.com>
+    Update version number to 5.6.0 (stable) 
 * Tue Aug 09 2022 David King <dave@daveking.com>
     Update version number to 5.5.x (unstable) 
 * Tue Apr 26 2022 David King <dave@daveking.com>

@@ -1,4 +1,4 @@
-FROM docker.io/arm64v8/fedora:35
+FROM docker.io/arm64v8/fedora:latest
 
 COPY ntopng-*.aarch64.rpm /tmp/
 RUN dnf -y update && \

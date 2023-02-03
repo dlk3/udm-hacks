@@ -8,12 +8,12 @@
 DEBUG=false
 
 #  Build a stable branch.  Must also modify the version and release variables
-#  and the CHANGELOG in the SPEC file
-#STABLE='5.2.1'
+#  and the CHANGELOG in the SPEC file, then push them to github.
+STABLE='5.6'
 
 #  Name of the Fedora container we use as the base for our container build
-#FEDORA_CONTAINER="arm64v8/fedora:latest"
-FEDORA_CONTAINER="arm64v8/fedora:35"
+FEDORA_CONTAINER="arm64v8/fedora:latest"
+#FEDORA_CONTAINER="arm64v8/fedora:35"
 
 #  Keep the container running and give me a shell prompt when something bad happens
 if $DEBUG; then
