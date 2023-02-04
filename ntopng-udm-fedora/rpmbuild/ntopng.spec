@@ -23,19 +23,15 @@ Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, open
 
 BuildRequires:	autoconf, automake, expat-devel, gcc-c++, git, json-c-devel, hiredis-devel, jsoncpp-devel, kernel-devel, libcap-devel, libcurl-devel, libmaxminddb-devel, libpcap-devel, libsqlite3x-devel, libtool, libxml2-devel, make, mariadb-devel, openssl-devel, pkg-config, readline-devel, rrdtool-devel, zeromq-devel
 
-
 %description
 ntopng is a passive network monitoring tool focused on flows and statistics that 
 can be obtained from the traffic captured by the server.
-
 
 %prep
 tar -zxvf %{SOURCE0}
 tar -zxvf %{SOURCE1}
 
-
 %patch0
-
 
 %build
 cd nDPI
@@ -45,7 +41,6 @@ cd ../%{name}
 ./autogen.sh
 ./configure
 make -j
-
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -64,7 +59,6 @@ cp -LR ntopng/scripts %{buildroot}/usr/share/ntopng
 find %{buildroot}/usr/share/ntopng -name "*~"   | xargs /bin/rm -f
 find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
 
-
 %files
 /etc/ntopng/ntopng.conf
 /etc/sysconfig/ntopng
@@ -73,23 +67,21 @@ find %{buildroot}/usr/share/ntopng -name ".git" | xargs /bin/rm -rf
 /usr/man/man8/ntopng.8.gz
 /usr/share/ntopng/*
 
-
 %post
 #  Create self-signed SSL certificate
 cd /usr/share/ntopng/httpdocs/ssl
 openssl req -new -x509 -sha1 -extensions v3_ca -nodes -days 3650 -out cert.pem -subj "/O=ntopng container" &>/dev/null
 cat privkey.pem cert.pem > ntopng-cert.pem
 
-
 %preun
 #  Delete the files that the %post scriptlet created
 cd /usr/share/ntopng/httpdocs/ssl
 rm privkey.pem cert.pem ntopng-cert.pem
 
-
 %changelog
-* Thu Feb 02 2023 David King <dave@daveking.com>
-    Update version number to 5.6.0 (stable) 
+* Sat Feb 04 2023 David King <dave@daveking.com>
+    Update version number to 5.6.0 (stable)
+    Patch ntopng to allow compiling on Fedora 37
 * Tue Aug 09 2022 David King <dave@daveking.com>
     Update version number to 5.5.x (unstable) 
 * Tue Apr 26 2022 David King <dave@daveking.com>

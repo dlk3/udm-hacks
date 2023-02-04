@@ -5,7 +5,7 @@
 #  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #  Run in interactive containers with a /bin/sh trap on failure 
-DEBUG=true
+DEBUG=false
 
 #  Build a stable branch.  Must also modify the version and release variables
 #  and the CHANGELOG in the SPEC file, then push it to github.
@@ -34,7 +34,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	#  Set to false to build the RPM and submit it to docker.com.
 	#
 	#  Need to have installed the QEMU emulation package: qemu-user-static
-	TESTBUILD=true
+	TESTBUILD=false
 
 	find ${HOME}/rpmbuild/SRPMS -iname ntopng-\* -delete
 	find ${HOME}/rpmbuild/RPMS -iname ntopng-\* -delete
