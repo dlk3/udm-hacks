@@ -48,7 +48,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		if $DEBUG; then
 			OPT="-it"
 		fi
-		/usr/bin/docker run $OPT --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/${FEDORA_CONTAINER} "$(realpath "$0")" ${HOME}
+		/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/${FEDORA_CONTAINER} "$(realpath "$0")" ${HOME}
 		echo "RPM build complete at $(date +%H:%m:%S)"
 		echo "That took $(elapsed $STARTTIME)"
 	else
@@ -132,6 +132,7 @@ else
 	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.conf ${HOME}/rpmbuild/SOURCES/
 	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.service ${HOME}/rpmbuild/SOURCES/
 	mv udm-hacks/ntopng-udm-fedora/rpmbuild/ntopng.sysconfig ${HOME}/rpmbuild/SOURCES/
+	mv udm-hacks/ntopng-udm-fedora/rpmbuild/lua-makefile-add-fPIC.patch ${HOME}/rpmbuild/SOURCES/
 	rm -fr udm-hacks
 	
 	#  Put tarballs of the program source into the container's rpmbuild/SOURCES directory

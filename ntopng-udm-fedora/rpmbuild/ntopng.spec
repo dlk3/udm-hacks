@@ -17,7 +17,7 @@ Source1:	nDPI.tar.gz
 Source2:	%{name}.conf
 Source3:	%{name}.service
 Source4:	%{name}.sysconfig
-Patch0:i	lua-makefile-add-fPIC.patch
+Patch0:		lua-makefile-add-fPIC.patch
 
 Requires: geoipupdate, glib2, hiredis, libgcc, libpcap, libxml2, net-tools, openssl, redis, sqlite, zlib
 
