@@ -5,10 +5,10 @@
 #  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #  Run in interactive containers with a /bin/sh trap on failure 
-DEBUG=false
+DEBUG=true
 
 #  Build a stable branch.  Must also modify the version and release variables
-#  and the CHANGELOG in the SPEC file, then push them to github.
+#  and the CHANGELOG in the SPEC file, then push it to github.
 STABLE='5.6'
 
 #  Name of the Fedora container we use as the base for our container build
@@ -28,15 +28,13 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 	#  This section of the script does not run in the podman container, it only
 	#  runs on the container's host and drives the overall build process
 
-	#  Set to "true" for quick local testing of the RPM package build process in 
-	#  this system's native architecture (x86 I assume, not the UDM's aarch64.)
+	#  Set to "true" to test the RPM package build process in an interactive 
+	#  VM.  The package will not be submitted to the docker repository.
 	#
-	#  Set to false to build the RPM and the Docker container for the UDM using 
-	#  qemu amd64 emulation.  This is VERY SLOW.  (It takes a little over 2 hours 
-	#  on my workstation.)
+	#  Set to false to build the RPM and submit it to docker.com.
 	#
 	#  Need to have installed the QEMU emulation package: qemu-user-static
-	TESTBUILD=false
+	TESTBUILD=true
 
 	find ${HOME}/rpmbuild/SRPMS -iname ntopng-\* -delete
 	find ${HOME}/rpmbuild/RPMS -iname ntopng-\* -delete
@@ -74,6 +72,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		echo "That took $(/usr/local/bin/elapsed $STARTTIME)"
 		
 		#  Just for the hell of it, send the SRPM to COPR to be built there
+		echo "Submitting source RPM for building on COPR"
 		/usr/bin/copr build --nowait dlk/rpms ${HOME}/rpmbuild/SRPMS/ntopng* || true
 		
 		#  Build the container

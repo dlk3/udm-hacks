@@ -1,0 +1,11 @@
+--- ntopng/third-party/lua-5.4.3/src/Makefile.orig	2023-02-04 08:33:09.462114280 -0500
++++ ntopng/third-party/lua-5.4.3/src/Makefile	2023-02-04 08:30:16.085688336 -0500
+@@ -20,7 +20,7 @@
+ SYSLDFLAGS=
+ SYSLIBS=
+ 
+-MYCFLAGS=
++MYCFLAGS= -fPIC
+ MYLDFLAGS=
+ MYLIBS=
+ MYOBJS=
