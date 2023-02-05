@@ -5,8 +5,8 @@
 %define  debug_package %{nil}
 
 Name:		ntopng
-Version:	5.6
-#Version:	5.7.%(date +%y%m%d)
+#Version:	5.6
+Version:	5.7.%(date +%y%m%d)
 Release:	1%{?dist}
 Summary:	A next generation network packet traffic probe used for high-speed web-based traffic analysis and flow collection.
 
@@ -79,6 +79,8 @@ cd /usr/share/ntopng/httpdocs/ssl
 rm privkey.pem cert.pem ntopng-cert.pem
 
 %changelog
+* Sat Feb 04 2023 David King <dave@daveking.com>
+    Update version number to 5.7.x (unstable)
 * Sat Feb 04 2023 David King <dave@daveking.com>
     Update version number to 5.6.0 (stable)
     Patch ntopng to allow compiling on Fedora 37
