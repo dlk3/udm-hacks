@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+
+#  Build a Deian package for ntopng from source and push it into the Debian PPA repository
+#  at my Git Pages web site
+#
+#  For additional info on setting up a PPA repository site with Git Pages see
+#  https://earthly.dev/blog/creating-and-hosting-your-own-deb-packages-and-apt-repo/
+
+#  PREREQ: /usr/bin/docker buildx build --platform=aarch64 --tag=ntopng-builder .
+DEBIAN_CONTAINER="ntopng-builder"
+
+#  if "STABLE_VERSION" or "NDPI_STABLE_VERSION" are set, build the stable code branch of each.
+#STABLE_VERSION='5.6'
+#NDPI_STABLE_VERSION='4.6'
+
+#  If DEBUG="YES" then the build container will go to a bash prompt when an error
+#  occurs during the compile/package build.  Otherwise it will vaporize.
+DEBUG="YES"
+
+#  Local clone of the git repo for the Git Pages PPA web site
+TARGETDIR="${HOME}/src/dlk3.github.io/udm-hacks-repo"
+
+#  Date/time format for console messages
+DATEFMT="+%Y-%m-%d %H:%M:%S"
+
+#  Terminate script immediately if/when error occurs
+set -e
+
+if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
+	
+	#  Process command line options
+	TESTING="NO"
+	UPDATEONLY="NO"
+	while getopts ":btuh" OPT; do
+		case "$OPT" in
+			t)
+				TESTING="YES"
+				;;
+			u)
+				UPDATEONLY="YES"
+				;;
+			h)
+				echo "usage: $0 [-t] [-u]"
+				echo 
+				echo "   Where:"
+				echo "      -t Start the Docker build container with a bash prompt for testing"
+				echo "      -u Do not do a build, just ppdate the Git Pages PPA repository."
+				exit
+				;;
+			*)
+				echo "usage: $0 [-t] [-u]"
+				exit 1
+		esac
+	done
+	shift $((OPTIND-1))
+	if [ "$TESTING" == "YES" ] && [ "$UPDATEONLY" == "YES" ]; then
+		echo "The -t and -u options cannot be used together at the same time"
+		exit 1
+	fi
+	
+	#  If this isn't just a repo refresh, start the Docker build container
+	#  to compile the source and build the packages
+	if [ "$UPDATEONLY" == "NO" ]; then
+		if [ "$TESTING" == "YES" ]; then
+			/usr/bin/docker run --platform=linux/arm64 --name=ntopng-builder -it --rm --volume="$HOME":"$HOME" "$DEBIAN_CONTAINER" /bin/bash
+			exit
+		else
+			echo "$(date "$DATEFMT"): Starting $DEBIAN_CONTAINER container"
+			/usr/bin/docker run --platform=linux/arm64 --name=ntopng-builder -it --rm --volume="$HOME":"$HOME" "$DEBIAN_CONTAINER" "$(realpath "$0")" "$TARGETDIR"
+		fi
+	fi
+
+	#  Update the PPA metadata files and push everything to github
+	
+	#  Fix any file ownership issues
+	sudo chown -R dlk:dlk "$TARGETDIR"
+	
+	SUBDIR='unstable'
+	if [ ! -z "$STABLE_VERSION" ]; then
+		SUBDIR='stable'
+	fi
+	
+	#  Keep only one package for each version
+	echo "$(date "$DATEFMT"): Deleting old packages"
+	cd "${TARGETDIR%%/}/pool/main/n/ntopng/$SUBDIR"
+	PREV_NAME=""
+	PREV_VERSION=""
+	for f in $(ls -r ntopng*); do
+		NAME=$(echo "$f" | cut -f1 -d_)
+		VERSION=$(echo "$f" | cut -f2 -d_)
+		VERSION=${VERSION%.*}
+		if [ "$NAME" == "$PREV_NAME" ] && [ "$VERSION" == "$PREV_VERSION" ]; then
+			echo "$(date "$DATEFMT"): Deleting $f"
+			git rm "$f" &>/dev/null || true
+			rm "$f" &>/dev/null || true
+		else
+			PREV_NAME="$NAME"
+			PREV_VERSION="$VERSION"
+		fi
+	done
+
+	# Create the Packages file in the repo
+	echo "$(date "$DATEFMT"): Creating Packages file in ${TARGETDIR%%/}/dists/${SUBDIR}/main/binary-arm64"
+	cd "${TARGETDIR}"
+	dpkg-scanpackages --multiversion --arch arm64 pool/main/n/ntopng/$SUBDIR >dists/${SUBDIR}/main/binary-arm64/Packages
+	cat dists/$SUBDIR/main/binary-arm64/Packages | gzip -9 >dists/${SUBDIR}/main/binary-arm64/Packages.gz
+	
+	# Create the Release file in the repo
+	echo "$(date "$DATEFMT"): Creating Release file in ${TARGETDIR%%/}/dists/$SUBDIR"
+	cd "${TARGETDIR%%/}/dists/$SUBDIR"
+	do_hash() {
+		HASH_NAME=$1
+		HASH_CMD=$2
+		echo "${HASH_NAME}:"
+		for f in $(find -type f); do
+			f=$(echo $f | cut -c3-) # remove ./ prefix
+			if [[ $f == Release* ]] || [[ $f == InRelease* ]]; then
+				continue
+			fi
+			echo " $(${HASH_CMD} ${f}  | cut -d" " -f1) $(wc -c $f)"
+		done
+	}
+
+	cat << EOF > Release
+Origin: udm-hacks Repository
+Label: udm-hacks-repo
+Suite: $SUBDIR
+Codename: $SUBDIR
+Version: 1.0
+Architectures: arm64
+Components: main
+Description: dlk3's hacks for the Ubiquiti Dream Machine
+Date: $(date -Ru)
+EOF
+	do_hash "MD5Sum" "md5sum" >> Release
+	do_hash "SHA1" "sha1sum" >> Release
+	do_hash "SHA256" "sha256sum" >> Release
+
+	export GNUPGHOME="${TARGETDIR%%/}/.gnupg"
+
+	#  Sign the Release file
+	echo "$(date "$DATEFMT"): Signing the Release file"
+	cd "${TARGETDIR%%/}/dists/$SUBDIR"
+	cat Release | gpg -abs >Release.gpg
+	cat Release | gpg -abs --clearsign >InRelease
+	echo "$(date "$DATEFMT"): Push updates to udm-hacks-repo"
+	
+	echo "$(date "$DATEFMT"): Pushing the updates to the Git Pages repo"
+	cd "$TARGETDIR"
+	COMMENT="Built new ntopng packages"
+	if [ "$UPDATEONLY" == "YES" ]; then
+		COMMENT="Refreshing package metadata"
+	fi
+	git add *
+	git commit -a -m "$COMMENT"
+	git push
+	echo "$(date "$DATEFMT"): Git push complete"
+		
+else
+	#  This is what runs inside the container to do the Debian package build from source
+	
+	if [ "$DEBUG" == "YES" ]; then
+		#  Go to a bash prompt if an error occurs
+		trap /bin/bash ERR
+	fi
+
+	#  Set container's timezone to match my local time
+	ln -sf /usr/share/zoneinfo/EST5EDT /etc/localtime
+
+	#  Update Debian inside the container
+	echo "$(date "$DATEFMT"): Install latest Debian updates in this container"
+	apt -y update
+	apt -y upgrade
+	
+	#  Get geolocation files for ntopng-data package
+	echo "$(date "$DATEFMT"): Fetching geolocation database files from db-ip.com"
+	if [ -d ${HOME}/dat_files ]; then
+		rm -fr ${HOME}/dat_files
+	fi
+	mkdir ${HOME}/dat_files
+	cd ${HOME}/dat_files
+	wget https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz
+	wget https://download.db-ip.com/free/dbip-country-lite-$(date +%Y-%m).mmdb.gz
+	wget https://download.db-ip.com/free/dbip-asn-lite-$(date +%Y-%m).mmdb.gz
+	gunzip *.gz
+
+	#  Copy in the repo's singing key
+	echo "$(date "$DATEFMT"): Copying PPA repo signing key from git repo"
+	cp -R "${1%%/}/.gnupg" "${HOME}/"
+
+	#  Download the source and build the packages
+	mkdir ~/src
+	cd ~/src
+	echo "$(date "$DATEFMT"): Downloading nDPI source"
+	BRANCH=""
+	if [ ! -z "$NDPI_STABLE_VERSION" ]; then
+		BRANCH="--branch=$NDPI_STABLE_VERSION"
+	fi
+	git clone https://github.com/ntop/nDPI.git $BRANCH
+	echo "$(date "$DATEFMT"): Downloading ntopng source"
+	BRANCH=""
+	if [ ! -z "$STABLE_VERSION" ]; then
+		BRANCH="--branch=$STABLE_VERSION"
+	fi
+	git clone https://github.com/ntop/ntopng.git $BRANCH
+	echo "$(date "$DATEFMT"): Compiling nDPI"
+	cd ~/src/nDPI
+	./autogen.sh
+	make -j
+	echo "$(date "$DATEFMT"): Compiling ntopng"
+	cd ~/src/ntopng
+	./autogen.sh
+	./configure
+	make -j
+	
+	#  Customizations for UDM environment
+	cd packages
+	echo "$(date "$DATEFMT"): Disabling automatic package upgrades in etc/cron.d/ntopng"
+	sed -i '/ * * * /s/^#*/#/' etc/cron.d/ntopng
+	
+	echo "$(date "$DATEFMT"): Put the ntopng data directory in the UDM data directory"
+	sed -i 's/# -d=\/var\/lib\/ntopng/# -d=\/var\/lib\/ntopng\n-d=\/data\/ntopng/' etc/ntopng/ntopng.conf
+	sed -i 's/DATA_DIR=\/var\/lib\/ntopng/DATA_DIR=\/data\/ntopng/' ubuntu/debian.ntopng/postinst.in
+	
+	echo "$(date "$DATEFMT"): Enable HTTPS port in etc/ntopng/ntopng.conf"
+	sed -i 's/# -w=3000/# -w=3000\n#\n#       -W|--https-port\n#        Enables the HTTPS port of the embedded server.\n#\n-W=3001/' etc/ntopng/ntopng.conf
+	
+	#  .deb package build
+	echo "$(date "$DATEFMT"): Building Debian packages"
+	cd debian
+	./configure
+	make
+
+	#  Move the new packages over
+	echo "$(date "$DATEFMT"): Moving package files to repo directory ${1%%/}/pool/main/n/ntopng"
+	SUBDIR='unstable'
+	if [ ! -z "$STABLE_VERSION" ]; then
+		SUBDIR='stable'
+	fi
+	mv ntopng*.deb "${1%%/}/pool/main/n/ntopng/$SUBDIR"
+
+	echo "$(date "$DATEFMT"): Build complete, leaving build container"
+fi

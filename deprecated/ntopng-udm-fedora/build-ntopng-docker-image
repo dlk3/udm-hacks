@@ -61,13 +61,13 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		
 		#  Build the RPMs
 		STARTTIME=$(date +%s)
-		echo "Starting RPM build at $(date +%H:%m:%S)"
+		echo "Starting RPM build at $(date +%H:%M:%S)"
 		OPT=""
 		if $DEBUG; then
 			OPT="-it"
 		fi
 		/usr/bin/docker run $OPT --platform=linux/arm64 --name=rpmbuild --rm --volume=${HOME}:${HOME} docker.io/${FEDORA_CONTAINER} "$(realpath "$0")" ${HOME}
-		echo "RPM build complete at $(date +%H:%m:%S)"
+		echo "RPM build complete at $(date +%H:%M:%S)"
 		echo "That took $(/usr/local/bin/elapsed $STARTTIME)"
 		
 		#  Just for the hell of it, send the SRPM to COPR to be built there
@@ -75,7 +75,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		/usr/bin/copr build --nowait dlk/rpms ${HOME}/rpmbuild/SRPMS/ntopng* || true
 		
 		#  Build the container
-		echo "Starting container build at $(date +%H:%m:%S)"
+		echo "Starting container build at $(date +%H:%M:%S)"
 		find -iname ntopng-\*.rpm -delete
 		cp ${HOME}/rpmbuild/SRPMS/ntopng* .
 		cp ${HOME}/rpmbuild/RPMS/aarch64/ntopng*.aarch64.rpm .
@@ -97,7 +97,7 @@ if [ $(cat /etc/hostname) == "fang.localdomain" ]; then
 		
 		#  Clean up
 		/usr/bin/docker image prune --force
-		echo "Container build complete at $(date +%H:%m:%S)"
+		echo "Container build complete at $(date +%H:%M:%S)"
 		echo "The entire process took $(/usr/local/bin/elapsed $STARTTIME)"
 	fi
 	sudo systemctl stop docker
