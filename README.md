@@ -10,4 +10,4 @@ __on_boot.d__ - the scripts I use with boostchicken's [on-boot-script utility](h
 
 See also:
 
-* [Running ntopng Natively On The Unbiquiti Dream Machine Pro (UDM-Pro)](https://dlk3.github.io/udm-hacks-repo/README.ntopng.html) - Running the ntopng network traffic analysis tool on a UDM Pro
+* [Running ntopng Natively On The Unbiquiti Dream Machine Pro (UDM-Pro)](https://daveking.com/udm-hacks/ntopng.html) - Running the ntopng network traffic analysis tool on a UDM Pro
