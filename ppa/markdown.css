@@ -36,7 +36,8 @@ pre, code {
 pre {
 	display: block;
 	background-color: #f1f1f1;
-	white-space: pre-wrap;
+	white-space: no-wrap;
+	overflow-x: auto;
 }
 code {
 	padding: 3px;
@@ -71,4 +72,6 @@ body {
 	font-family: Cantarell;
 	font-weight: normal;
 	font-size: 11pt;
+	max-width: 1080px;
+	margin: 0 auto;
 }
