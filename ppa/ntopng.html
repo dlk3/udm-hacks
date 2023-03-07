@@ -1,0 +1,106 @@
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" href="markdown.css">
+	<title>Running ntopng On The Unifi Dream Machine Pro (UDM-Pro)</title>
+</head>
+<body class="export">
+<h1>Running ntopng On The Unifi Dream Machine Pro (UDM-Pro)</h1>
+
+<p>This repository contains Debian package files that can be used to install and run the 
+community (free) version of the <a href="https://www.ntop.org/products/traffic-analysis/ntop/">ntopng network traffic analysis tool</a> 
+on a Ubiquiti Dream Machine Pro router/switch.  This repository's packages are built weekly from the latest 
+<a href="https://github.com/ntop">development source on Github</a>.</p>
+
+<p>With the release of Unifii OS v2.4.27 on UDM devices, ntopng can now be run natively.  A seperate podman container is no longer necessary.</p>
+
+<h2>Installing the ntopng Debian package</h2>
+
+<p>This repository contains custom packages for ntopng on the UDM.  Packages are available 
+for the current development version of ntopng and for the stable released version.  The 
+unstable development packages are updated weekly, on Monday nights.  Stable releases are 
+published at the developer's discretion, historically one to three times a year.</p>
+
+<p>To enable the unstable development repository on the UDM, use ssh to connect to the UDM
+as the root user and issue these commands:</p>
+<pre><code>curl -s --compressed &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;pgp-key.public&quot; | gpg --dearmor | tee &#47;etc&#47;apt&#47;trusted.gpg.d&#47;udm-hacks.gpg &gt;&#47;dev&#47;null
+curl -s --compressed -o &#47;etc&#47;apt&#47;sources.list.d&#47;udm-hacks.list &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;udm-hacks.list&quot;
+apt update</code></pre>
+
+<p>To enable the stable release repository on the UDM, use ssh to connect to the UDM
+as the root user and issue these commands:</p>
+<pre><code>curl -s --compressed &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;pgp-key.public&quot; | gpg --dearmor | tee &#47;etc&#47;apt&#47;trusted.gpg.d&#47;udm-hacks.gpg &gt;&#47;dev&#47;null
+curl -s --compressed -o &#47;etc&#47;apt&#47;sources.list.d&#47;udm-hacks.list &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;udm-hacks-stable.list&quot;
+apt update</code></pre>
+<!--  Obsolete, but save just in case ...
+<p>Before installing ntopng, install the redis package and modify its configuration.  
+ntopng uses the redis service to store configuration information.  redis installs its
+data storage directory on volitile UDM storage, in the <code>/var/lib</code> directory.
+This should be changed to a directory on the UDM's persistent filesystem.  If this isn't
+done, ntopng will have to be manually reconfigured every time the UDM reboots. Use
+ssh to connect to the UDM as the root user and do the following:</p>
+<ol>
+	<li>Install redis:<pre><code>apt install redis</code></pre></li>
+	<li>Create a new directory on the persistent filesystem and move redis's data to it:
+	<pre><code></code>systemctl stop redis
+mkdir /data/redis  # Do "mkdir /volume1/redis" instead if the secondary disk is installed in the UDM
+chown redis:redis /data/redis   # Or "chown redis:redis /volume1/redis"
+mv /var/lib/redis/* /data/redis/   # Or "mv /var/lib/redis/* /volume1/redis/"</code></pre></li>
+	<li>Add the following line to the <code>[Service]</code> section of the <code>/etc/systemd/system/redis.service</code> file:
+	<pre><code>ReadWriteDirectories=-/data/redis
+	- OR -
+ReadWriteDirectories=-/volume1/redis</code></pre></li>
+	<li>Update the systemd daemon with the changes and start redis:<pre><code>systemctl daemon-reload
+systemctl start redis</code></pre></li>
+</ol>
+-->
+<p>Use this command to install ntopng on the UDM:</p>
+<pre><code>apt install ntopng</code></pre>
+
+<p>ntopng execution is controlled by systemd.  ntopng should start automatically during installation.  It should also start automatically after rebooting.</p>
+<h3>Switching from the unstable to the stable release channel</h3>
+<p>If you initially installed the unstable development version, you can switch to the stable release version by editing the <code>/etc/apt/sources.list.d/udm-hacks-repo.list</code> and changing the word <code>unstable</code> to <code>stable</code>, like this:</p>
+<pre><code>deb [signed-by=&#47;etc&#47;apt&#47;trusted.gpg.d&#47;udm-hacks.gpg] https:&#47;&#47;daveking.com&#47;udm-hacks stable main</code></pre>
+<p>To then uninstall the unstable version and install the stable one, issue these commands on the UDM:</p>
+<pre><code>systemctl stop ntopng
+apt remove ntopng ntopng-data
+apt update
+apt install ntopng</code></pre>
+<h2>Accessing ntopng</h2>
+<p>Point your browser to <a href="https://YOUR.UDM.IP.ADDRESS:3001">https://YOUR.UDM.IP.ADDRESS:3001</a>, for example: <a href="https://192.168.1.1:3001">https://192.168.1.1:3001</a></p>
+<p>ntopng is configured with a self-signed SSL certificate for HTTPS security.  Your browser may ask you to accept this certificate when you access ntopng.</p>
+<p>The default user and password used for the initial login are:<br /><br />Userid: admin<br />Password: admin</p>
+<p>The ntopng documentation can be found <a href="https://www.ntop.org/guides/ntopng/">here</a>.  Note that the packages on this repository deliver the Community Edition of ntopng which is free and does not require a license.</p>
+<h2>Updating ntopng</h2>
+<p>Use ssh to connect to the UDM as the root user and issue these commands:</p>
+<pre><code>apt update
+apt upgrade ntopng ntopng-data</code></pre>
+<h2>What to do when you forget your ntopng password</h2>
+<p>Use ssh to connect to the UDM as the root user and issue these commands:</p>
+<pre><code>systemctl stop ntopng
+redis-cli del ntopng.user.admin.password
+systemctl start ntopng</code></pre>
+<p>When you reconnect your browser you will be able to login using the default <code>admin</code> userid and <code>admin</code> password, which you will promptly be prompted to change.</p>
+<h1>Customizing The ntopng Installation</h1>
+<p>These are optional customizations that you may, or may not, want to make to your ntopng installation.</p>
+<h2>Do not modify <code>/etc/ntopng/ntopng.conf</code> directly</h2>
+<p>ntopng's main configuration file is <code>/etc/ntopng/ntopng.conf</code>.  This file is delivered as part of the Debian package and should not be modified.  If it is, then there's a risk of missing out on future updates.  Instead, make configuration changes by creating a file with the extension <code>.conf</code>in the <code>/etc/ntopng/ntopng.conf.d/</code> directory containing your changes.</p>
+<p>If you need to see all of the available configuration options, <code>ntopng --help</code> will show them to you.</p>
+<h2>Move ntopng's data store to the UDM's secondary disk to save space on the UDM's main disk</h2>
+<p>If you have the secondary data disk installed in your UDM then you can configure ntopng to keep its runtime data on that disk.  This frees up space on the main SSD that's built into the UDM, where other system software and operational data is kept.</p>
+<p>Move the existing <code>/data/ntopng</code> data directory to the secondary disk and modify the configuration to tell ntopng where it is located (the <code>-d=</code> option.)</p>
+<p>For example:</p>
+<pre><code>systemctl stop ntopng
+mv &#47;data&#47;ntopng &#47;volume1&#47;</code></pre>
+<p>Create a configuration file called <code>/etc/ntopng/ntopng.conf.d/my.conf</code> which contains the line:</p>
+<pre><code>-d=&#47;volume1&#47;ntopng</code></pre>
+<p>Start ntopng:</p>
+<pre><code>systemctl start ntopng</code></pre>
+<h2>Specify which network interfaces ntopng should monitor</h2>
+<p>The UDM has a lot of network interfaces.  Too many for ntopng to handle them all.  If you check the system log (<code>journalctl -u ntopng</code>) you can see ntopng discarding (ignoring) interfaces as it starts up.  You can specify the interfaces that you want ntopng to monitor by creating a configuration file called <code>/etc/ntopng/ntopng.conf.d/my.conf</code> which contains a line for each monitored interface:</p>
+<pre><code>-i=br0
+-i=eth8</code></pre>
+<p>Issue the command <code>ip addr show</code> to see a list of all of the interfaces on the UDM and their addresses.  The interfaces that have inet addresses assigned are the active interfaces on the UDM.</p>
+<p>Restart ntopng after making this change:</p>
+<pre><code>systemctl restart ntopng</code></pre>
+</body></html>

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+#  Source file provides $HOSTNAME, $VPNPORT, and DATADIR
+source /etc/default/openvpn-server
+
+#  Assumption is that the WAN interface is the only port with a dynamic address
+WAN_IF=$(ip -o addr show | grep ' scope global dynamic ' | cut -f2 -d\ )
+
+#  This function inserts and deletes the iptables rules we need.
+#
+#  New rules are "inserted" at the top of their respective chains so, if order is important, 
+#  rules need to be issued in reverse order (bottom-to-top) inside this function.
+function iptables_rules () {
+    #  Wait for chain to be present
+    while ! /sbin/iptables -L UBIOS_WAN_LOCAL_USER &>/dev/null; do
+        sleep 5
+    done
+
+    #  Open the OpenVPN port on the WAN interface
+    /sbin/iptables $1 UBIOS_WAN_LOCAL_USER -i $WAN_IF -p udp --dport $VPNPORT -m conntrack --ctstate NEW -j RETURN
+}
+
+#  This function prevents duplicate iptables rules being put into the chains
+function iptables () {
+    ACTION=$(echo "$*" | sed 's/.*\(-I\|-D\) .*/\1/')
+    TEST=$(echo "$*" | sed 's/\(.*\)-I\|-D \(.*\)/\1-C \2/')
+    if [ "$ACTION" == "-D" ]; then
+        eval "/sbin/iptables $TEST &>/dev/null" && eval "/usr/sbin/iptables $*"
+    else
+        eval "/sbin/iptables $TEST &>/dev/null" || eval "/usr/sbin/iptables $*"
+    fi
+    [ $? -eq 0 ] || echo "\"iptables $*\" command failed"
+}
+
+case "$1" in
+    "add"|"")
+    [ ! -z "$PID" ] && echo 'OpenVPN is already running' && exit 1
+        iptables_rules "-I"
+        ;;
+    "drop")
+        iptables_rules "-D"
+        ;;
+    *)
+        echo "Usage: $0 [add|drop]"
+        echo "       If no action is specified, "add" is the default."
+        exit 1
+        ;;
+esac

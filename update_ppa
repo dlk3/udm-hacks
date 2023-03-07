@@ -1,0 +1,91 @@
+#!/usr/bin/env sh
+
+#  Update the PPA repository
+
+#  Local copy of PPA contents
+PPADIR=~/src/udm-hacks/ppa
+
+#  Terminate immediately on error
+set -e
+
+#  Date/time format for console messages
+DATEFMT="+%Y-%m-%d %H:%M:%S"
+	
+#  Fix any file ownership issues
+sudo chown -R dlk:dlk "$PPADIR"
+
+#  Keep only one version of each package
+echo "$(date "$DATEFMT"): Deleting old packages"
+prune() {
+	cd "$1"
+	PREV_NAME=""
+	PREV_VERSION=""
+	for f in $(ls -r *.deb); do
+		NAME=$(echo "$f" | cut -f1 -d_)
+		VERSION=$(echo "$f" | cut -f2 -d_)
+		VERSION=${VERSION%.*}
+		if [ "$NAME" == "$PREV_NAME" ] && [ "$VERSION" == "$PREV_VERSION" ]; then
+			echo "$(date "$DATEFMT"): Deleting $f"
+			rm "$f" &>/dev/null || true
+		else
+			PREV_NAME="$NAME"
+			PREV_VERSION="$VERSION"
+		fi
+	done
+}
+prune "${PPADIR%%/}/pool/main/n/ntopng/unstable"
+prune "${PPADIR%%/}/pool/main/n/ntopng/stable"
+prune "${PPADIR%%/}/pool/main/o/openvpn-server"
+
+#  Use the repository's signing key
+export GNUPGHOME=${PPADIR}/../.gnupg
+	
+for SUBDIR in unstable stable; do 
+	# Create the Packages file in the repo
+	echo "$(date "$DATEFMT"): Creating Packages file in ${PPADIR%%/dists/$SUBDIR}"
+	cd "${PPADIR}"
+	dpkg-scanpackages --arch arm64 pool/main/n/ntopng/${SUBDIR} >dists/${SUBDIR}/main/binary-arm64/Packages
+	dpkg-scanpackages --arch arm64 pool/main/o/openvpn-server >>dists/${SUBDIR}/main/binary-arm64/Packages
+	cat dists/${SUBDIR}/main/binary-arm64/Packages | gzip -9 >dists/${SUBDIR}/main/binary-arm64/Packages.gz
+
+	# Create the Release file in the repo
+	echo "$(date "$DATEFMT"): Creating Release file in ${PPADIR%%/}/dists/$SUBDIR"
+	cd "${PPADIR%%/}/dists/$SUBDIR"
+	do_hash() {
+		HASH_NAME=$1
+		HASH_CMD=$2
+		echo "${HASH_NAME}:"
+		for f in $(find -type f); do
+			f=$(echo $f | cut -c3-) # remove ./ prefix
+			if [[ $f == Release* ]] || [[ $f == InRelease* ]]; then
+				continue
+			fi
+			echo " $(${HASH_CMD} ${f}  | cut -d" " -f1) $(wc -c $f)"
+		done
+	}
+
+	cat << EOF > Release
+Origin: udm-hacks Repository
+Label: udm-hacks
+Suite: $SUBDIR
+Codename: $SUBDIR
+Version: 1.0
+Architectures: arm64
+Components: main
+Description: My hacks for the Ubiquiti Dream Machine
+Date: $(date -Ru)
+EOF
+	do_hash "MD5Sum" "md5sum" >> Release
+	do_hash "SHA1" "sha1sum" >> Release
+	do_hash "SHA256" "sha256sum" >> Release
+
+	#  Sign the Release file
+	echo "$(date "$DATEFMT"): Signing the Release file"
+	cd "${PPADIR%%/}/dists/$SUBDIR"
+	cat Release | gpg -abs >Release.gpg
+	cat Release | gpg -abs --clearsign >InRelease
+done
+
+echo "$(date "$DATEFMT"): Sync local repo with remote web site"
+rsync --archive --partial --progress --delete ${PPADIR%%/}/ daveking.com:/opt/udm-hacks/
+echo "$(date "$DATEFMT"): Sync complete"

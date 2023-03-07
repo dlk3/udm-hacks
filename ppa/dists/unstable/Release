@@ -1,0 +1,18 @@
+Origin: udm-hacks Repository
+Label: udm-hacks
+Suite: unstable
+Codename: unstable
+Version: 1.0
+Architectures: arm64
+Components: main
+Description: My hacks for the Ubiquiti Dream Machine
+Date: Tue, 07 Mar 2023 01:36:10 +0000
+MD5Sum:
+ eb7f7e447cdcdc2601902fa48a9f485d 1917 main/binary-arm64/Packages
+ 40ac9bf2bbd5ad8aea031afa628f999e 1022 main/binary-arm64/Packages.gz
+SHA1:
+ 9208564d8841a453aba51422aefda76487337147 1917 main/binary-arm64/Packages
+ 349243851797562ff841225ad3d45485e1316fa1 1022 main/binary-arm64/Packages.gz
+SHA256:
+ 5f58e06e179c7ff3368a5adea44ebce44e824ed63093dbb1c0d569436f658d8b 1917 main/binary-arm64/Packages
+ a06e84a657414ceb4460bcd332c1c6bf2803b7dfb2aa8a9d7eeaff6529332e29 1022 main/binary-arm64/Packages.gz

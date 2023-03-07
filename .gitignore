@@ -1,4 +1,4 @@
-ntopng-udm-fedora/*.rpm
-ntopng-udm-fedora/build
-ntopng-udm-fedora/Dockerfile.old
-ntopng-udm-fedora/build-ntopng-docker-image.deprecated
+.gnupg
+ppa/pool
+ppa/dists
+

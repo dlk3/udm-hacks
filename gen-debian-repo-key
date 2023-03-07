@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+
+if [ $# != 1 ]; then
+	echo "One parameter required = the name of the PPA repository"
+	exit 1
+fi
+
+EMAIL="${1}@daveking.com"
+
+cat << __EOF__ > /tmp/pgp-key.batch
+%echo Generating a PGP key for ${1}
+Key-Type: RSA
+Key-Length: 4096
+Name-Real: $1
+Name-Email: $EMAIL
+Expire-Date: 0
+%no-ask-passphrase
+%no-protection
+%commit
+__EOF__
+
+export GNUPGHOME="$(pwd)/.gnupg"
+rm -fr $GNUPGHOME
+if [ ! -d "$GNUPGHOME" ]; then
+	mkdir -p "$GNUPGHOME"
+	chmod 700 "$GNUPGHOME"
+fi
+gpg --no-tty --batch --gen-key /tmp/pgp-key.batch
+echo "default-key $EMAIL" >"${GNUPGHOME}/gpg.conf"
+gpg --armor --export "$EMAIL" >pgp-key.public
+rm /tmp/pgp-key.batch

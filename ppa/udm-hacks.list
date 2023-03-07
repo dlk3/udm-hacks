@@ -1,0 +1,1 @@
+deb [signed-by=/etc/apt/trusted.gpg.d/udm-hacks.gpg] https://daveking.com/udm-hacks unstable main

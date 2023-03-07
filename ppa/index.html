@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.8.0">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="markdown.css">
+  <title>Ubiquiti Dream Machine Pro Hacks</title>
+</head>
+<body class="export">
+  <h1>Ubiquiti Dream Machine Pro Hacks</h1>
+  <p>This is a Debian PPA repository containing packages for my hacks for the UDM Pro. My hacks include:</p>
+  <ul>
+    <li>Running the community (free) version of the <a href="ntopng.html">NTOPNG network traffic analysis tool</a> on the UDM Pro.</li>
+    <li>Configuring the <a href="openvpn-udm.html">OpenVPN server</a> on the UDM to support remote client access.</li>
+  </ul>
+  <h2>Using this repository on the UDM Pro</h2>
+  <p>To enable this repository on the UDM Pro, use ssh to connect to the UDM as the root user and issue these commands:</p>
+  <pre><code>curl -s --compressed "https://daveking.com/udm-hacks/pgp-key.public" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/udm-hacks.gpg &gt;/dev/null
+curl -s --compressed -o /etc/apt/sources.list.d/udm-hacks.list "https://daveking.com/udm-hacks-repo/udm-hacks.list"
+apt update</code></pre>
+</body>
+</html>

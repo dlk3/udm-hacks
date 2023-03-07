@@ -1,0 +1,38 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Origin: udm-hacks Repository
+Label: udm-hacks
+Suite: unstable
+Codename: unstable
+Version: 1.0
+Architectures: arm64
+Components: main
+Description: My hacks for the Ubiquiti Dream Machine
+Date: Tue, 07 Mar 2023 01:36:10 +0000
+MD5Sum:
+ eb7f7e447cdcdc2601902fa48a9f485d 1917 main/binary-arm64/Packages
+ 40ac9bf2bbd5ad8aea031afa628f999e 1022 main/binary-arm64/Packages.gz
+SHA1:
+ 9208564d8841a453aba51422aefda76487337147 1917 main/binary-arm64/Packages
+ 349243851797562ff841225ad3d45485e1316fa1 1022 main/binary-arm64/Packages.gz
+SHA256:
+ 5f58e06e179c7ff3368a5adea44ebce44e824ed63093dbb1c0d569436f658d8b 1917 main/binary-arm64/Packages
+ a06e84a657414ceb4460bcd332c1c6bf2803b7dfb2aa8a9d7eeaff6529332e29 1022 main/binary-arm64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQJQBAEBCAA6FiEEyBUfHTAOOLzpBwtLPJINWFRWcU0FAmQGlQscHHVkbS1oYWNr
+cy1yZXBvQGRhdmVraW5nLmNvbQAKCRA8kg1YVFZxTQZLD/96zEhqs+j3w+chMPYR
+US+KuCC4FcMINR+kjPdK3vBzCz81Y2NGyttNsPJTnY8Gyo9OkOL4NQmYL7qlud5B
+oecVXihTM7Uca4ZcRYjUiWyw79SmPwkSZrFGWTT2BRLvYByUCe3xpZIUwI/2kC5/
+tIbSfCNNYTEOavaxBROKzJOLdrsWR2JF8DbsPQm/Z1nycWUDZb+t+pgTOG986U+h
+T/fkc84BS4C/sffJOuQtcUmwkN1DuC4CUMEApp8EB9exOKRWTh2boOp9R4evqeAh
+NsBFkEKB8Rr86R04kttsIRe55cfZ47AYQtPxbH2PuZn2tKjuD2vtSAG+qYseKxYv
+kzfl8I7UloBrMT+fM7+0jk569foXmnXQ/C61m78tOGRo6MAoZ3HOIU5qk7I+Ai+c
+2tr8pDgylWVlhp3GXMwOQl9HFrB2u0FHedoPS+n6ni1CI+H1/cbip7RBbaFvbpz2
+SqSEEOXIeDLkWeTNqBU7m00jOOdvve9BnCtxHntGmCLMHauL4nA7/IvQdbTYAKaj
+awYaqwAzfiLzCrr3gtKCgZZ1BmAdJiooKswxl2Xwe7ZjEBU+uZ6fQIKWztJh8bbR
+cbBrnPDwOB5NJnwkqq+Cj1RgVlvcj8Hax/HGM+MuGr4fofTnPy8J6Uc6n3kWAcJK
+cduQL456aWPR1PA4mrSg3M+XwA==
+=kX2J
+-----END PGP SIGNATURE-----

@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenVPN server for remote client access
+After=network.target syslog.target
+
+[Service]
+EnvironmentFile=/etc/default/openvpn-server
+ExecStartPre=/usr/bin/openvpn-server-iptables-rules add
+ExecStart=/usr/sbin/openvpn --config ${DATADIR}/server/openvpn-server.conf
+ExecStopPost=-/usr/bin/openvpn-server-iptables-rules drop
+Restart=on-failure
