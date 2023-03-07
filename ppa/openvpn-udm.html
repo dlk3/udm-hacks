@@ -1,239 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.8.0">
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="markdown.css">
-  <title>Configuring An OpenVPN Server On A Unifi Dream Machine Pro</title>
+	<meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.8.0">
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="markdown.css">
+	<title>Configuring OpenVPN To Support Remote Access On A Ubiqiti Dream Machine Pro</title>
 </head>
 <body class="export">
-  <h1>Configuring An OpenVPN Server On A Unifi Dream Machine Pro</h1>
-  <p>The Unifi Dream Machine Pro (UDM) comes with OpenVPN software
-  installed on it. The UDM's administrative UI can configure UDM's
-  OpenVPN to create a point-to-point VPN connection between the UDM
-  and another network. It does not support configuring OpenVPN as a
-  VPN server that clients on the public internet can use to access
-  my local LAN. This can be done manually, however, in a manner
-  that will persist through UDM firmware upgrades and reboots.</p>
-  <p>The steps necessary are:</p>
-  <ol>
-    <li>Install the EasyRSA tool that the OpenVPN development team
-    provides to create and manage the X509 certificates that are
-    used by the OpenVPN server and the clients.</li>
-    <li>Create the X509 certificates and keys that the OpenVPN
-    server needs to run.</li>
-    <li>Create the OpenVPN server configuration file.</li>
-    <li>Install a boot script which will start the OpenVPN server
-    whenever the UDM boots.</li>
-    <li>Create one or more client configuration files which contain
-    the settings, certificate and key that the client needs to
-    authenticate with the server.</li>
-    <li>Distribute the client configuration files and test
-    connectivity.</li>
-  </ol>
-  <p>I haven't tested whether OpenVPN cannot be used in server mode
-  at the same time that it is being used in point-to-point mode.
-  I've never had occasion to use the point-to-point mode so it's
-  never been configured on my UDM.</p>
-  <h2>Security Warning</h2>
-  <p>This process is all about opening a new hole in the UDM
-  firewall, thereby making the network that the UDM protects less
-  secure. While I try not to do stupid stuff that exposes my
-  network to harm, I cannot guarantee that there are no security
-  exposures inherent in making the UDM configuration changes I
-  describe below. Fair warning, ok? Do not do any of this if your
-  UDM protects a critical network. I cannot accept any
-  responsibility for any harm that may befall anyone as a result of
-  what I have done and documented here.</p>
-  <h2>Where To Put The Files</h2>
-  <p>This document uses the <code>/data</code> directory as the
-  location for the files that are added to configure the OpenVPN
-  server. If the secondary hard drive is installed in the UDM then
-  the <code>/volume1</code> directory could be used instead. The
-  advantage is that data stored in <code>/volume1</code> is more
-  likely to survive a major UDM firmware update. For example, with
-  the 2.4.27 firmware update that just came out, all of my
-  customizations in the <code>/data</code> directory were deleted.
-  They had previously survived three years of updates, but this
-  major update deleted them. Those on the secondary disk,
-  <code>/volume1</code>, survived however.</p>
-  <h2>Install EasyRSA</h2>
-  <p>EasyRSA is a tool that the OpenVPN development team has
-  created to make the process of creating the PKI (public key
-  infrastructure) associated with OpenVPN simpler. This PKI is
-  where I create, store and manage all of the certificates, keys
-  and configuration files for my OpenVPN server and clients.</p>
-  <p>EasyRSA is available in the OpenVPN GitHub repository at
-  (<a href="https://github.com/OpenVPN/easy-rsa/releases/latest">https://github.com/OpenVPN/easy-rsa/releases/latest</a>).
-  Get the name of the latest <code>EasyRSA-*.tgz</code> file there
-  and then substitute it into these commands to complete the
-  installation:</p>
-  <pre><code>mkdir -p /data/openvpn/easyrsa
-curl -OJL https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
-tar xf EasyRSA-3.0.8.tgz --strip-components=1 -C /data/openvpn/easyrsa
-rm EasyRSA-3.0.8.tgz</code></pre>
-  <h2>Creating OpenVPN server certificates and keys</h2>
-  <p>I created all of the certificates and keys that the OpenVPN
-  server needs. The OpenVPN web site has <a href=
-  "https://openvpn.net/community-resources/how-to/#setting-up-your-own-certificate-authority-ca-and-generating-certificates-and-keys-for-an-openvpn-server-and-multiple-clients">
-  instructions</a> for doing this but they are based on an earlier
-  version of EasyRSA. The EasyRSA commands and their options have
-  changed a little with the release I am using. Still, the web site
-  is a useful source of additional information on what I'm doing
-  here and why:</p>
-  <pre><code>mkdir /data/openvpn/server
-cd /data/openvpn/server
-../easyrsa/easyrsa init-pki
-../easyrsa/easyrsa build-ca nopass  
-    Note: This command prompts for a name for the certificate authority that's being
-          created.  I called mine "OpenVPN CA"
-../easyrsa/easyrsa build-server-full server nopass
-../easyrsa/easyrsa gen-dh
-openvpn --genkey --secret pki/private/ta.key</code></pre>
-  <p>The server certificates I created here and the client
-  certificates I'll create later are good for 825 days. Once that
-  time expires I'll need to come back and renew all of the
-  certificates I've issued.</p>
-  <h2>Creating a server configuration file</h2>
-  <p>The <a href=
-  "https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/server.conf">
-  server configuration file</a> that I use is in this GitHub
-  project. It references all of the certificate and key files
-  generated in the previous step. See the <a href=
-  "https://openvpn.net/community-resources/how-to/#creating-configuration-files-for-server-and-clients">
-  OpenVPN documentation</a> for additional information on the
-  server configuration file.</p>
-  <p>I would direct your attantion to the following lines in the
-  configuration file:</p>
-  <pre><code>local MY-UDM.SOMEDDNS.ORG</code></pre>
-  <p>This line tells OpenVPN the IP address or the hostname of the
-  WAN network interface on the UDM. This is where OpenVPN will
-  listen for clients that are trying to connect. I use a hostname
-  from a free DDNS service here. It always stays the same, even
-  when my cable company changes the IP address that my cable modem
-  assigns to the WAN adapter on my UDM.</p>
-  <pre><code>server 10.8.0.0 255.255.255.0</code></pre>
-  <p>This is the IP subnet in my local network from which my VPN
-  clients are assigned addresses by the server. It needs to be a
-  subnet that isn't in use elsewhere in my network.</p>
-  <pre><code>push "route 192.168.1.0 255.255.255.0"</code></pre>
-  <p>There needs to be a line like this for every LAN or VLAN in my
-  local network that I want my clients to be able to access.</p>
-  <h2>The Management Option In The Server Configuration File</h2>
-  <p>The management option is defined in the config file as a way
-  to provide the Nagios network monitoring server that I use with
-  an interface it can use to check the status of the openvpn
-  daemon. You could remove this option. If not, be sure to create a
-  pw-file containing a password to authenticate access through the
-  management port.</p>
-  <h2>Creating a boot script to start the OpenVPN server</h2>
-  <p>I want the OpenVPN server to start automatically every time my
-  UDM boots up. I previously used John "boostchicken" D's <a href=
-  "https://github.com/boostchicken/udm-utilities/tree/master/on-boot-script">
-  on-boot-script GitHub repository</a> utility for this purpose and
-  that approach would still work. This time around I prefer to
-  build my own Debian package containing the startup routine and
-  install that from my PPA repository. That approach keeps things
-  simple while ensuring persistence of my changes.</p>
-  <p>I wrote the <a href=
-  "https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/openvpn-server.sh">
-  openvpn-server.sh script</a> in this GitHub repository to start
-  the OpenVPN server whenever the UDM boots. It also configures the
-  <code>iptables</code> firewall rules necessary to control access
-  via the VPN. It and the <a href=
-  "https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/openvpn-server.service">
-  openvpn-server.service</a> systemd file that controls it are
-  included in the Debian package.</p>
-  <p>Before using this script on a new server the script might need
-  an edit. Please look at these parts of the script before using it
-  on a new server:</p>
-  <pre><code>WAN_IF='eth8'
-OPENVPN_PORT='1194'</code></pre>
-  <p>Confirm that the WAN interface specified here is, indeed, the
-  WAN interface of the UDM. The OpenVPN port, 1194, specified here
-  needs to match the <code>port</code> directive in the server
-  configuration file.</p>
-  <p>There is only one <code>iptables</code> firewall rule needed
-  in order to enable OpenVPN on the UDM. The rule used in my script
-  opens the OpenVPN port on the WAN network interface to any
-  internet device. Once a device has been authenticated by the
-  OpenVPN server, and has been connected to the VPN subnet, then
-  the UDM's regular access rules will control what parts of the
-  local network it has access to. By default the UDM allows all
-  devices on all networks to communicate with each other. That
-  works for me. If you require additional restrictions, make the
-  necessary changes using the UDM's regular network configuration
-  UI.</p>
-  <h3>Script command line options</h3>
-  <p>The <code>15-openvpn-server.sh</code> script can also be used
-  to manually control the OpenVPN server and its
-  <code>iptables</code> rule if that's ever necessary:</p>
-  <ul>
-    <li>Start the OpenVPN server<br>
-    <code>/mnt/data/openvpn/15-openvpn-server</code></li>
-    <li>Stop the OpenVPN server<br>
-    <code>/mnt/data/openvpn/15-openvpn-server stop</code></li>
-    <li>Delete the <code>iptables</code> rules controlled by this
-    script<br>
-    <code>/mnt/data/openvpn/15-openvpn-server
-    delete_rules</code></li>
-  </ul>
-  <h2>Creating OpenVPN configuration files for clients</h2>
-  <p>I create, store and manage my OpenVPN client configuration
-  files on the UDM in the same PKI that I created using EasyRSA
-  when I configured the server. I have created a script that
-  generates a single <code>*.ovpn</code> file that contains the
-  configuration directives plus the certificates and keys that the
-  client needs to connect.</p>
-  <p>The <a href=
-  "https://github.com/dlk3/udm-hacks/blob/master/openvpn-udm/mk-ovpn">
-  mk-ovpn</a> script I use is in this GitHub repository. It is in
-  the <code>/data/openvpn</code> directory on my UDM. Now, when I
-  want to create an OpenVPN configuration file for a client I
-  connect to my UDM via ssh and enter:</p>
-  <pre><code>/data/openvpn/mk-ovpn client-name</code></pre>
-  <p>The output configuration file is written to
-  <code>/data/openvpn/client-name.ovpn</code>. I move this file to
-  the client machine.</p>
-  <p>These additional files are generated in the PKI to manage this
-  client's certificate and private key. They remain on the UDM:</p>
-  <pre><code>/data/openvpn/server/pki/private/client-name.key
-/data/openvpn/server/pki/client-name.creds
-/data/openvpn/server/pki/reqs/client-name.req
-/data/openvpn/server/pki/issued/client-name.crt</code></pre>
-  <p>To use my script with a different OpenVPN server, the
-  <code>OPENVPN_SERVER</code> variable at the top of the script
-  needs to be set to be the hostname or IP address of the WAN
-  interface on that UDM.</p>
-  <p>There's more information on managing OpenVPN clients, like
-  revoking access by revoking certificates, in the <a href=
-  "https://openvpn.net/community-resources/how-to">OpenVPN How To
-  Guide</a>.</p>
-  <h2>Distributing configuration files to clients and testing</h2>
-  <p>The <code>*.ovpn</code> configuration files need to be treated
-  like they are passwords allowing open access to the network. The
-  files need to be kept secure as they are distributed to client
-  machines.</p>
-  <p>Configuring and running an OpenVPN client is beyond the scope
-  of this document, so I'll leave that as an exercise for the
-  reader. I will point out a few things on the UDM which could help
-  with troubleshooting:</p>
-  <ul>
-    <li>The OpenVPN server writes its log output into the UDM's
-    <code>/var/log/messages</code> file. The amount of information
-    it writes can be controlled by setting the <code>verb</code>
-    directive in the <code>/data/openvpn/server/server.conf</code>
-    file. Setting <code>verb 6</code> is recommended for debugging
-    purposes. The same change can be made in a client's
-    configuration file to see debugging data at the client end of
-    the connection.</li>
-    <li>The OpenVPN server updates
-    <code>/data/openvpn/server/openvpn-status.log</code> once every
-    minute with information about currently connected clients.</li>
-    <li>The OpenVPN server uses the
-    <code>/data/openvpn/server/ipp.txt</code> file to remember what
-    clients were assigned which addresses in case the server
-    experiences a quick restart.</li>
-  </ul>
+	<h1>Configuring OpenVPN To Support Remote Access On A Ubiquiti Dream Machine Pro</h1>
+	<p>The Unifi Dream Machine Pro (UDM) has OpenVPN installed but only enables its use for point-to-point VPN connections between the UDM  and another network. The Unifi console software does not provide a way to configue OpenVPN as a VPN server that clients on the public internet can use to access the local LAN. This can be done manually, however.  The challenge is doing so in a manner that will persist through UDM firmware upgrades and reboots.</p>
+    <p>I have created a Debian package that I host in my PPA repository that applies the necessary configuration changes.  This ensures that the OpenVPN configuration changes persist and can be reapplied quickly should a major firmware change wipe them out.</p>
+    <p>In addition to OpenVPN configuration changes, this package supplies <a href="https://github.com/OpenVPN/easy-rsa">OpenVPN's EasyRSA tool</a> to manage the PKI certificate authority and client certificates that are necessary to use OpenVPN.  A script is provided that generates OpenVPN profile files for the individual client devices (desktops, laptops, phones, tablets, etc.) that need to access the network.</p>
+	
+	<h2>Security Warning</h2>
+	<p>This process is all about opening a new hole in the UDM firewall, thereby making the network that the UDM protects less secure. While I try not to do stupid stuff that exposes my network to harm, I cannot guarantee that there are no security exposures inherent in making the UDM configuration changes this package makes. Fair warning, ok?  Do not do any of this if your UDM protects a critical network. I cannot accept any responsibility for any harm that may befall anyone as a result of what I have done and documented here.</p>
+	
+	<h2>Installing the openvpn-server Debian package</h2>
+	<p>To enable the PPA repository on the UDM, use ssh to connect to the UDM as the root user and issue these commands:</p>
+	<pre><code>curl -s --compressed "https://daveking.com/udm-hacks/pgp-key.public" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/udm-hacks.gpg >/dev/null
+curl -s --compressed -o /etc/apt/sources.list.d/udm-hacks.list "https://daveking.com/udm-hacks/udm-hacks.list"
+apt update</code></pre>
+	<p>Use this command to install the openvpn-server package on the UDM:</p>
+	<pre><code>apt install openvpn-server</code></pre>
+	<p><b>IMPORTANT:</b>  After the installation is complete, check the hostname that is specified for the "local" option in the <code>/data/openvpn/server/openvpn-server.conf</code> file and the "HOSTNAME" variable in the <code>/data/openvpn/server/openvpn-server.defaults</code> file to be sure that the hostname used in each is a hostname that resolves to the UDM's address on the public internet.  <b>Note:</b> If the UDM has the secondary disk installed in it, then these files will be in the <code>/volume1</code> directory instead of the <code>/data</code> directory.</p>
+	
+	<h2>Creating OpenVPN configuration files for clients</h2>
+	<p>The OpenVPN client certificate files necessary for authentication are created in the PKI on the UDM using the EasyRSA tool.  I have provided a script that performs the steps necessary to create and revoke client access.  It creates an *.ovpn file for each client.  This file is then used on the client device, with its own OpenVPN software installed, to connect to the network through OpenVPN on the UDM.</p>
+	<p>Do not rely on this script if you have a large number of clients, it was only intended to support a small home network.</p>
+	<p>To create an ovpn file for a new client, use ssh to connect to the UDM as the root user and issue this command:</p>
+	<pre><code>mk-ovpn CLIENTNAME</code></pre>
+	<p>The name of the ovpn file will be returned.  Download it and move it to the client device in a secure manner.</p>
+	<p>To revoke access for an existing client, use ssh to connect to the UDM as the root user and issue this command:</p>
+	<pre><code>mk-ovpn -d CLIENTNAME</code></pre>
+	<p>A confirmation message will be displayed.</p>
+	<p>One way to review a list of currently authorized clients would be to look at the list of files in the <code>/data/openvpn/server/pki/inline</code> directory.  Examining the content of these files can provide additional information about each client, such as the date on which its access expires.</p>
 </body>
 </html>
