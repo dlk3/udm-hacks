@@ -1,0 +1,222 @@
+#!/usr/bin/env python
+
+#  Copyright (C) 2021  David King <dave@daveking.com>
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public License,
+#  v. 2.0.  If a copy of the MPL was not distbuted with this file, You can
+#  obtain one at https://mozilla.org/MPL/2.0/.
+
+#  I don't want to record on my indoor cameras during the day when I'm at home.
+#  SmartThings uses my cell phone as a presence sensor and can tell when I am away
+#  from home.  
+
+#############################################################################################################
+#  C o n f i g u r a t i o n   S e c t i o n
+#############################################################################################################
+
+#  I want recording turned off between the hours of 7am and 11pm when I'm at home.  At night, and whan
+#  I am away, recording will be turned on.
+#  Set these variables to 0 and 24 to ignore the time element and only record when you are away.
+start_off_hour = 7
+end_off_hour = 23
+
+#  The URL of the Unifi Dream Machine that manages the cameras.  Use "https://localhost"
+#  when running this script on the UDM itself.
+udm_url = 'https://localhost'
+
+#  My login credentials for the Unifi Dream Machine
+udm_username = ''
+udm_password = ''
+
+#  My SmartThings authetication token, from https://account.smartthings.com/tokens
+smartthings_token = ''
+
+#  The name of the SmartThings location to check for away/home status, from the SmartThings app
+smartthings_location_name = 'Home'
+
+#  The List of Unifi cameras to be contolled.
+#  The names are the names they've been given in the Unifi Protect app.
+#  The recording mode is the mode that they should use when they are set to record.
+#  Possible choices are: "always" and "detections".  The "never" mode is used to turn off recording.
+camera_list = [
+	{
+		'name': 'Living Room',
+		'recording_mode': 'detections'
+	},
+	{
+		'name': 'Downstairs',
+		'recording_mode': 'detections'
+	}
+]
+
+#############################################################################################################
+#############################################################################################################
+
+import datetime
+from optparse import OptionParser
+import json
+import base64
+import datetime
+
+#  Write messages to the console and log file
+#  Later Python versions may require that the print statement used in this function be modified.
+def log(message):
+	global opts
+	timestamp = datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')
+	if opts.logfile:
+		with open(opts.logfile, 'a') as f:
+			f.write('{} {}\n'.format(timestamp, message))
+	if not opts.quiet:
+		print('{} {}'.format(timestamp, message))
+
+#  Return true if the SmatThings location mode is "away".  Requires the location
+#  name and a SmartThings API token.
+def smartthingsAway(location_name, api_token):
+
+	smartthings_url = 'https://api.smartthings.com/v1/'
+
+	headers = {
+		'Authorization': 'Bearer ' + api_token
+	}
+	   
+	#  Get the locationId for the location with the specified name
+	locationId = ''
+	r = requests.get(smartthings_url + 'locations', headers=headers)
+	if r.status_code != 200:
+		log(r.text)
+		exit(r.status_code)
+	for item in r.json()['items']:
+		if item['name'] == location_name:
+			locationId = item['locationId']
+	if locationId == '':
+		log('Unable to get the locationId for the location named "{}"'.format(location_name))
+		exit(1)
+
+	#  Get the "mode" at that location: Home, Away, Night
+	location_mode = ''
+	r = requests.get(smartthings_url + 'locations/' + locationId + '/modes/current', headers=headers)
+	if r.status_code != 200:
+		log(r.text)
+		exit(r.status_code)
+	location_mode = r.json()['name']
+	if location_mode == '':
+		log('Unable to get the curreent mode for the location named "{}"'.format(location_name))
+		exit(1)
+
+	log('SmartThings reports that the "{}" location is in "{}" mode'.format(location_name, location_mode))
+	
+	if location_mode == 'Away':
+		return True
+	return False
+
+#  Set recording "on" or "off".  Requires UDM access details, the list of cameras being controlled
+#  and the action to be taken, i.e., either "off" or "on"
+def setRecording(udm_url, udm_username, udm_password, camera_list, action):
+	
+	#  Login to UDM
+	data = {
+		'username': udm_username,
+		'password': udm_password,
+		'rememberMe': False
+	}
+	r = requests.post(udm_url + '/api/auth/login', json=data, verify=False)
+	if r.status_code != 200:
+		log('ABORT: The login failed: ' + r.text)
+		exit(r.status_code)
+		
+	#  Set authorization cookies for all subsequent requests
+	for cookie in r.headers['Set-Cookie'].split(';'):
+		if cookie.startswith('TOKEN='):
+			headers = {
+				'Content-Type': 'application/json; charset=utf-8',
+				'Cookie': cookie + ';',
+			}
+			#  If the token cookie contains a x-csrf-token value, this must be decoded
+			#  and passed in the request headers otherwise any attempt to change any
+			#  settings will fail with a "404 Not Found" error.
+			decoded_token = json.loads(base64.b64decode(cookie.split('=')[1].split('.')[1] + '==='))
+			if 'csrfToken' in decoded_token:
+				headers['x-csrf-token'] = decoded_token['csrfToken']
+
+	#  Get the information for all of the cameras this UDM knows about
+	r = requests.get(udm_url + '/proxy/protect/api/bootstrap', headers=headers, verify=False)
+	if r.status_code != 200:
+		log('ABORT: The request for camera information failed: ' + r.text)
+		exit(r.status_code)
+
+	#  Find the cameras we want to control
+	for camera in camera_list:
+
+		log('Request is to turn {} recording for the "{}" camera'.format(action, camera['name']))
+
+		if action == 'off':
+			desired_mode = 'never'
+		else:
+			desired_mode = camera['recording_mode']
+			
+		found = False
+		for unifi_camera in r.json()['cameras']:
+			if unifi_camera['name'] == camera['name']:
+				found = True
+				#  If the camera is not already in the desired mode, then make it so
+				if unifi_camera['recordingSettings']['mode'] == desired_mode:
+					log('"{}" camera is already in "{}" mode, nothing to be done'.format(camera['name'], unifi_camera['recordingSettings']['mode']))
+				else:
+					log('"{}" camera is in "{}" mode, attempting to change to "{}" mode'.format(camera['name'], unifi_camera['recordingSettings']['mode'], desired_mode))
+					#  Populate the request payload with the current settings for this camera
+					#  except for the recording mode. which we'll be changing.
+					data = {
+						'channels': unifi_camera['channels'],
+						'recordingSettings': {
+							"mode": desired_mode,
+							"prePaddingSecs": unifi_camera['recordingSettings']['prePaddingSecs'],
+							"postPaddingSecs": unifi_camera['recordingSettings']['postPaddingSecs'],
+							"minMotionEventTrigger": unifi_camera['recordingSettings']['minMotionEventTrigger'],
+							"enablePirTimelapse": unifi_camera['recordingSettings']['enablePirTimelapse'],
+							"motionAlgorithm": unifi_camera['recordingSettings']['motionAlgorithm']
+						},
+						'smartDetectSettings': unifi_camera['smartDetectSettings']
+					}
+					result = requests.patch(udm_url + '/proxy/protect/api/cameras/' + unifi_camera['id'], json=data, headers=headers, verify=False)
+					if result.status_code != 200:
+						log('ABORT: The request to change "{}" camera\'s recording mode failed: {}'.format(camera['name'], result.text))
+						exit(result.status_code)
+					
+		if not found:
+			log('Unable to find a camera named "{}"'.format(camera['name']))
+
+#  Define command-line options to turn off console output and to log progress into a file
+cmdline = OptionParser(usage="usage: %prog [options]", description='Set security camera recording mode depending on SmartThings location mode and time of day')
+cmdline.add_option('-q', '--quiet', action='store_true', dest='quiet', default=False, help='Do not print any log messages on the console')    
+cmdline.add_option('-l', '--log', dest='logfile', metavar='FILE', help='Write log messages into this file')
+opts, args = cmdline.parse_args()
+
+#  Handle error that occurs if the requests module is not installed
+try:
+	import requests
+
+	#  Turn off warnings about the use of self-signed SSL certificates.  This code may
+	#  need to be modified if you are using a later version of the requests module.
+	from requests.packages.urllib3.exceptions import InsecureRequestWarning
+	requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+except:
+	log('ABORT: Unable to import the Python "requests" module.  Is it installed?')
+	exit(1)
+
+#  Figure out whether or not we're in the time window during which recording should be
+#  turned off.
+hour = datetime.datetime.now().hour
+turn_off_window = False
+if not start_off_hour == end_off_hour:
+	if start_off_hour < end_off_hour:
+		if hour >= start_off_hour and hour < end_off_hour:
+			turn_off_window = True
+	else:	
+		if hour >= start_off_hour or hour < end_off_hour:
+			turn_off_window = True
+
+#  If we're not in the time window, or I am away, turn on recording.  Otherwise turn it off.
+if not turn_off_window or smartthingsAway(smartthings_location_name, smartthings_token):
+	setRecording(udm_url, udm_username, udm_password, camera_list, 'on')
+else:
+	setRecording(udm_url, udm_username, udm_password, camera_list, 'off')
