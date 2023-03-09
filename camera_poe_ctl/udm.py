@@ -112,7 +112,8 @@ class UDM:
 				#  If the token cookie contains a x-csrf-token value, this must be decoded
 				#  and passed in the request headers otherwise any attempt to change any
 				#  settings will fail with a "404 Not Found" error.
-				_decoded_token = json.loads(base64.b64decode(_cookie.split('=')[1].split('.')[1] + '==='))
+				_decoded_token = base64.b64decode(_cookie.split('=')[1].split('.')[1] + '===')
+				_decoded_token = json.loads(_decoded_token.decode('utf-8'))
 				if 'csrfToken' in _decoded_token:
 					self.session.headers.update({'x-csrf-token': _decoded_token['csrfToken']})
 

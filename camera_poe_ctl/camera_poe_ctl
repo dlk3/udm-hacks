@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #  Copyright (C) 2023  David King <dave@daveking.com>
 #
@@ -32,21 +32,15 @@ try:
 	#  need to be modified if you are using a later version of the requests module.
 	from requests.packages.urllib3.exceptions import InsecureRequestWarning
 	requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ModuleNotFoundError:
-	logging.error('Unable to import the Python "requests" module.  Is it installed?')
-	exit(1)
 except:
-	logging.exception('Unexpected exception while importing requests module:', exc_info=True)
+	logging.error('Unable to import the Python "requests" module.  Is it installed?')
 	exit(1)
 
 #  Handle error that occurs if my custom udm API module is not present
 try:
 	import udm
-except ModuleNotFoundError:
-	logging.error('Unable to import the Python "udm" module that ships with this script.')
-	exit(1)	
 except:
-	logging.exception('Unexpected exception while importing udm module:', exc_info=True)
+	logging.error('Unable to import the Python "udm" module that ships with this script.')
 	exit(1)	
 
 #  Return true if the SmartThings location mode is "Away".

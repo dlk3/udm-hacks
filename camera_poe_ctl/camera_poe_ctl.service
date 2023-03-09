@@ -1,0 +1,7 @@
+[Unit]
+Description=controlling POE for selected cameras based on SmartThings location status
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/camera_poe_ctl --config=/data/camera_poe_ctl/camera_poe_ctl.conf
+

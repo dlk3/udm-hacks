@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+
+set -e
+
+PKGNAME="camera-poe-ctl"
+PKGVER="1.0"
+PKGREL="0"
+PKGARCH="arm64"
+PKGMAINT="Dave King <dave@daveking.com>"
+PKGDESC="Controlling POE for selected cameras on the Ubiquiti Dream Machine Pro based on SmartThings location status
+ This package contains a script that turns off power to selected cameras when we are at home and want privacy"
+
+BUILDDIR=${PKGNAME}_${PKGVER}-${PKGREL}_${PKGARCH}
+
+rm -fr ${BUILDDIR} &>/dev/null
+mkdir -p ${BUILDDIR}/data/camera_poe_ctl
+mkdir ${BUILDDIR}/DEBIAN
+mkdir -p ${BUILDDIR}/etc/systemd/system
+mkdir -p ${BUILDDIR}/usr/bin
+
+cp -v camera_poe_ctl.conf.sample ${BUILDDIR}/data/camera_poe_ctl/
+cp -v postinst ${BUILDDIR}/DEBIAN/
+cp -v camera_poe_ctl.timer camera_poe_ctl.service ${BUILDDIR}/etc/systemd/system/
+cp -v camera_poe_ctl udm.py ${BUILDDIR}/usr/bin/
+chmod 755 ${BUILDDIR}/usr/bin/camera_poe_ctl
+
+cat <<_EOF_ >${BUILDDIR}/DEBIAN/control
+Package: ${PKGNAME}
+Version: ${PKGVER}
+Architecture: ${PKGARCH}
+Maintainer: ${PKGMAINT}
+Description: ${PKGDESC}
+Depends: udmpro-al324-base-files (>=2.4)
+_EOF_
+
+dpkg-deb --build --root-owner-group ${BUILDDIR}
+
+mv -v ${BUILDDIR}.deb ${HOME}/src/udm-hacks/ppa/pool/main/c/camera-poe-ctl/
+
+${HOME}/src/udm-hacks/update_ppa
+
+rm -fr ${BUILDDIR}

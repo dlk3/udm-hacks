@@ -1,0 +1,8 @@
+[Unit]
+Description=controlling POE for selected cameras based on SmartThings location status
+
+[Timer]
+OnCalendar=*:0/10
+
+[Install]
+WantedBy=timers.target

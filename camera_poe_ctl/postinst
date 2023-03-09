@@ -1,0 +1,50 @@
+#!/bin/sh -e
+
+# Previous package version on upgrade
+PREV_VERSION=$2
+
+case "$1" in
+    configure)
+	# continue below
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+	exit 0
+    ;;
+
+    *)
+	echo "postinst called with unknown argument \`$1'" >&2
+	exit 0
+    ;;
+esac
+
+umask 022
+
+#  Use /volume1 as the persistent store if it exists
+DATADIR="/data/camera_poe_ctl"
+if [ -d /volume1/.srv ]; then
+	DATADIR="/volume1/camera_poe_ctl"
+	if [ ! -d $DATADIR ]; then
+		mkdir $DATADIR
+		mv /data/camera_poe_ctl/* ${DATADIR}/
+	fi
+	rm -fr /data/camera_poe_ctl
+	sed -i "s|--config=/data/camera_poe_ctl|--config=${DATADIR}|" /etc/systemd/system/camera_poe_ctl.service
+	sed -i "s|cameraDetailsFile = '/data/camera_poe_ctl|cameraDetailsFile = '${DATADIR}|" ${DATADIR}/camera_poe_ctl.conf.sample
+fi
+
+#  Enable and start the openvpn-server.service
+systemctl daemon-reload
+systemctl reset-failed
+if [ -z "$PREV_VERSION" ]; then
+	systemctl enable camera_poe_ctl.timer
+fi
+systemctl -q is-enabled camera_poe_ctl.timer && systemctl restart camera_poe_ctl.timer
+
+#  Message to the user
+if [ ! -f $/DATADIR}/camera_poe_ctl.conf ]; then
+	echo ""
+	echo "You must create a ${DATADIR}/camera_poe_ctl.conf file to make this package work."
+	echo "See the sample file: ${DATADIR}/camera_poe_ctl.conf.sample"
+fi
+exit 0

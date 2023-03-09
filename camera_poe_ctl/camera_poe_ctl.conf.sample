@@ -46,7 +46,7 @@ smtpPassword = 'PASSWORD'
 #  forgets about cameras that have been powered off.  We need to remember this
 #  information so that we can turn cameras back on when necessary, so we save
 #  the camera information in this file.
-cameraDetailsFile = '~/.config/camera_poe_ctl.camera_list.json'
+cameraDetailsFile = '/data/camera_poe_ctl/camera_poe_ctl.camera_list.json'
 
 #  A log file where this script can write error messages.  If this is set to
 #  an empty string then messages will be written to STDERR.

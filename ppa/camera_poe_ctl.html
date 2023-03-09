@@ -1,0 +1,27 @@
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" href="markdown.css">
+	<title>Turn Off Selected Ubiquiti Dream Machine Pro (UDM Pro) Cameras Based on SmartThings Location Status</title>
+</head>
+<body class="export">
+<h1>Turn Off Selected Ubiquiti Dream Machine Pro (UDM Pro) Cameras Based on SmartThings Location Status</h1>
+
+<p>For privacy reasons we want to keep our indoor cameras turned off unless nobody is home and the house is empty.  We have already set up SmartThings to use our mobile devices as sensors so that it knows when we are away from home.  I have defined a SmartThings routine that switches our "Home" location to "Away" mode when it senses that we are away.  The script in this package queries the SmartThings location mode and turns on the cameras that are listed in its configuration file when we are away and turns them back off when we arrive back home.</p>
+
+<h2>Installing the camera-poe-ctl Debian package</h2>
+
+<p>To enable my PPA repository on the UDM, use ssh to connect to the UDM as the root user and issue these commands:</p>
+
+<pre><code>curl -s --compressed &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;pgp-key.public&quot; | gpg --dearmor | tee &#47;etc&#47;apt&#47;trusted.gpg.d&#47;udm-hacks.gpg &gt;&#47;dev&#47;null
+curl -s --compressed -o &#47;etc&#47;apt&#47;sources.list.d&#47;udm-hacks.list &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;udm-hacks.list&quot;
+apt update</code></pre>
+
+<p>Use this command to install this package on the UDM:</p>
+<pre><code>apt install camera-poe-ctl</code></pre>
+
+<p><strong>IMPORTANT:</strong> This script uses a configuration file that must be customized with your information before the script will work properly.  If your UDM has the secondary disk drive installed, then the configuration file should be in <code>/volume1/camera_poe_ctl/camera_poe_ctl.conf</code>.  If not, it should be in <code>/data/camera_poe_ctl/camera_poe_ctl.conf</code>.  A sample configuration file can be found in those same directories.  See the comments in the sample file for guidance on the information that is needed.</p>
+
+<h2>Running the Script</h2>
+
+<p>Systemd controls the execution of the script.  As installed, the script runs every 10 minutes.  To adjust this interval, adjust the <code>OnCalendar</code> setting in the <code>/etc/systemd/system/camera_poe_ctl.timer</code> file.</p>
