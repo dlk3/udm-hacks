@@ -3,3 +3,4 @@
 __pycache__
 camera_poe_ctl.camera_list.json
 test.conf
+camera_poe_ctl.conf

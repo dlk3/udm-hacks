@@ -232,7 +232,7 @@ class Device:
 			self.sw_port = properties['sw_port']
 		except:
 			logging.debug('Device with MAC = {} does not have a "sw_port" attribute.'.format(self.mac))
-			self.sw_port = Nonew
+			self.sw_port = None
 		
 class Camera:
 	def __init__(self, session, url, properties):
@@ -276,10 +276,20 @@ class Camera:
 							#  mode on this camera's switch port
 							self.port_override = {
 								'autoneg': _port['autoneg'],
+								'egress_rate_limit_kbps_enabled': _port['egress_rate_limit_kbps_enabled'],
+								'excluded_networkconf_ids': _port['excluded_networkconf_ids'],
+								'forward': _port['forward'],
 								'full_duplex': _port['full_duplex'],
+								'isolation': _port['isolation'],
+								'name': _port['name'],
+								'native_networkconf_id': _port['native_networkconf_id'],
+								'op_mode': _port['op_mode'],
 								'port_idx': _port['port_idx'],
-								'port_security_mac_address': [],
-								'portconf_id': _port['portconf_id'],
+								'port_poe': _port['port_poe'],
+								'port_security_enabled': False,
+								'port_security_mac_address': _port['port_security_mac_address'],
+								'setting_preference': _port['setting_preference'],
+								'show_traffic_restriction_as_allowlist': False,
 								'speed': _port['speed']
 							}
 							
