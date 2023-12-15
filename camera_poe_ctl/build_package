@@ -3,7 +3,7 @@
 set -e
 
 PKGNAME="camera-poe-ctl"
-PKGVER="1.0"
+PKGVER="1.1"
 PKGREL="0"
 PKGARCH="arm64"
 PKGMAINT="Dave King <dave@daveking.com>"

@@ -189,7 +189,7 @@ class UDM:
 		#  ports on those switches that the cameras are connected to.
 		for _device in self.devices:
 			for _c in _camera_json:
-				if _device.mac == _c['mac']:
+				if _device.mac == _c['mac'] and _device.sw_mac and _device.sw_port:
 					try:
 						_c['switch_mac'] = _device.sw_mac
 					except:
@@ -277,7 +277,6 @@ class Camera:
 							self.port_override = {
 								'autoneg': _port['autoneg'],
 								'egress_rate_limit_kbps_enabled': _port['egress_rate_limit_kbps_enabled'],
-								'excluded_networkconf_ids': _port['excluded_networkconf_ids'],
 								'forward': _port['forward'],
 								'full_duplex': _port['full_duplex'],
 								'isolation': _port['isolation'],
