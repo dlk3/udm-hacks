@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+set -e
+
+PKGNAME="blacklists"
+PKGVER="1.0"
+PKGREL="1"
+PKGARCH="arm64"
+PKGMAINT="Dave King <dave@daveking.com>"
+PKGDESC="Configure iptables on the UDM Pro to block all traffic from the IP addresses listed in the Stratosphere Labs CTU-AIPP Blacklist.  The list of blocked addresses is updated from the source once a day."
+
+BUILDDIR=${PKGNAME}_${PKGVER}-${PKGREL}_${PKGARCH}
+
+rm -fr ${BUILDDIR} &>/dev/null
+mkdir -p ${BUILDDIR}/DEBIAN
+mkdir -p ${BUILDDIR}/etc/systemd/system
+mkdir -p ${BUILDDIR}/usr/bin
+
+cp -v postinst ${BUILDDIR}/DEBIAN/
+cp -v blacklists.timer blacklists.service ${BUILDDIR}/etc/systemd/system/
+cp -v blacklists ${BUILDDIR}/usr/bin/
+chmod 755 ${BUILDDIR}/usr/bin/blacklists
+
+cat <<_EOF_ >${BUILDDIR}/DEBIAN/control
+Package: ${PKGNAME}
+Version: ${PKGVER}
+Architecture: ${PKGARCH}
+Maintainer: ${PKGMAINT}
+Description: ${PKGDESC}
+Depends: udmpro-al324-base-files (>=3)
+_EOF_
+
+dpkg-deb --build --root-owner-group ${BUILDDIR}
+
+mv -v ${BUILDDIR}.deb ${HOME}/src/udm-hacks/ppa/pool/main/b/blacklists/
+
+${HOME}/src/udm-hacks/update_ppa
+
+rm -fr ${BUILDDIR}

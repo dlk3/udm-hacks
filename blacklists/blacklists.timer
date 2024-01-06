@@ -1,0 +1,10 @@
+[Unit]
+Description=updating ip address blacklists
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+AccuracySec = 1 hour
+
+[Install]
+WantedBy=timers.target

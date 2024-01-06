@@ -1,0 +1,31 @@
+#!/bin/sh -e
+
+# Previous package version on upgrade
+PREV_VERSION=$2
+
+case "$1" in
+    configure)
+	# continue below
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+	exit 0
+    ;;
+
+    *)
+	echo "postinst called with unknown argument \`$1'" >&2
+	exit 0
+    ;;
+esac
+
+umask 022
+
+#  Enable and start the blacklists.timer
+systemctl daemon-reload
+systemctl reset-failed
+if [ -z "$PREV_VERSION" ]; then
+	systemctl enable blacklists.timer
+fi
+systemctl -q is-enabled blacklists.timer && systemctl restart blacklists.timer
+
+exit 0

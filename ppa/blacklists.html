@@ -1,0 +1,25 @@
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" href="markdown.css">
+	<title>Block Internet Traffic Based On The Stratosphere Labs IP Address Blacklist</title>
+</head>
+<body class="export">
+<h1>Block Internet Traffic Based On The Stratosphere Labs IP Address Blacklist</h1>
+
+<p>The script in this package configures iptables on the UDM Pro to block all traffic from the IP addresses listed in the <a href="https://www.stratosphereips.org/attacker-ip-prioritization-blacklist">Stratosphere Labs CTU-AIPP Blacklist</a>.  The script is executed once a day using systemd to update the list of blocked addresses.</p>
+
+<h2>Installing the blocklists Debian package</h2>
+
+<p>To enable my PPA repository on the UDM, use ssh to connect to the UDM as the root user and issue these commands:</p>
+
+<pre><code>curl -s --compressed &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;pgp-key.public&quot; | gpg --dearmor | tee &#47;etc&#47;apt&#47;trusted.gpg.d&#47;udm-hacks.gpg &gt;&#47;dev&#47;null
+curl -s --compressed -o &#47;etc&#47;apt&#47;sources.list.d&#47;udm-hacks.list &quot;https:&#47;&#47;daveking.com&#47;udm-hacks&#47;udm-hacks.list&quot;
+apt update</code></pre>
+
+<p>Use this command to install this package on the UDM:</p>
+<pre><code>apt install blacklists</code></pre>
+
+<h2>Running the Script</h2>
+
+<p>Systemd controls the execution of the script.  As installed, the script runs every day at approximately 4 AM.  To adjust this timer, adjust the <code>OnCalendar</code> setting in the <code>/etc/systemd/system/blacklists.timer</code> file.</p>

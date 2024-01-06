@@ -1,0 +1,7 @@
+[Unit]
+Description=updating ip address blacklists
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/blacklists
+

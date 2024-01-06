@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+stratosphere_url = 'https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP-Prioritize_Consistent-latest.csv'
+
+#  Configure logging
+import logging
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
+import requests
+import subprocess
+import ipaddress
+
+#  Add the iptables rules we need to define a new blacklists chain that logs and drops
+#  the packets coming in from blacklisted addresses in the given ipset
+def mk_iptables_rule(rule):
+    
+    #  Define the BLISTS chain that filters packets based on the blacklist sets
+    try:
+        proc = subprocess.run('iptables -nL BLISTS', shell=True, check=True, capture_output=True)
+        logging.debug('BLISTS chain already exists in iptables')
+    except:
+        logging.info('defining new BLISTS chain in iptables')
+        subprocess.run('iptables -N BLISTS', shell=True, check=True)
+
+    #  Define the BLISTSLOGNDROP log and drop target
+    try:
+        proc = subprocess.run('iptables -nL BLISTSLOGNDROP', shell=True, check=True, capture_output=True)
+        logging.debug('BLISTSLOGNDROP target already exists in iptables')
+    except:
+        logging.info('defining new BLISTSLOGNDROP target in iptables')
+        subprocess.run('iptables -N BLISTSLOGNDROP', shell=True, check=True)
+        subprocess.run('iptables -A BLISTSLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "BLISTS BLOCK: "', shell=True, check=True)
+        subprocess.run('iptables -A BLISTSLOGNDROP -j DROP', shell=True, check=True)
+
+    #  Add the INPUT rule that routes all traffic to the BLISTS filtering chain
+    found = False
+    proc = subprocess.run('iptables -nL INPUT', shell=True, check=True, capture_output=True)
+    for line in proc.stdout.decode('utf-=8').split('\n'):
+        if 'BLISTS' in line:
+            found = True
+            logging.debug('BLISTS filter already in the INPUT chain in iptables')
+            break
+    if not found:
+        logging.info('adding BLISTS filter to the INPUT chain in iptables')
+        try:
+            proc = subprocess.run('iptables -I INPUT 2 -j BLISTS', shell=True, check=True, capture_output=True)
+        except:
+            pass
+
+    #  Add the FORWARD rule that routes all traffic to the BLISTS filtering chain
+    found = False
+    proc = subprocess.run('iptables -nL FORWARD', shell=True, check=True, capture_output=True)
+    for line in proc.stdout.decode('utf-=8').split('\n'):
+        if 'BLISTS' in line:
+            found = True
+            logging.debug('BLISTS filter is already in the FORWARD chain in iptables')
+            break
+    if not found:
+        logging.info('adding BLISTS filter to the FORWARD chain in iptables')
+        try:
+            subprocess.run('iptables -I FORWARD 2 -j BLISTS', shell=True, check=True)
+        except:
+            pass
+
+    #  Add the rule that adds the ipset to the BLISTS filtering chain
+    found = False
+    proc = subprocess.run('iptables -nL BLISTS', shell=True, check=True, capture_output=True)
+    for line in proc.stdout.decode('utf-=8').split('\n'):
+        if rule in line:
+            found = True
+            logging.debug('"{}" ipset rule already exists in iptables'.format(rule))
+            break
+    if not found:
+        logging.info('adding "{}" ipset rule to the BLISTS chain in iptables'.format(rule))
+        try:
+            subprocess.run('iptables -A BLISTS -m set --match-set {} -j BLISTSLOGNDROP'.format(rule), shell=True, check=True)
+        except:
+            pass
+
+#  Build an ipset based on the data in the Stratosphere blacklist
+blacklist = requests.get(stratosphere_url)
+if blacklist.status_code == 200:
+    logging.info('updating the stratosphere ipset')
+    #  Clear the set or create it if it doesn't exist
+    try:
+        logging.debug('flushing the set')
+        subprocess.run('ipset flush stratosphere', shell=True, check=True)
+    except:
+        logging.debug('flush failed, create the set')
+        subprocess.run('ipset -exist create stratosphere "hash:ip"', shell=True, check=True)
+
+    #  Add the IP addresses to the set
+    for line in blacklist.content.decode('utf-8').split('\n'):
+        addr = line.split(',')[0]
+        try:
+            logging.debug('adding "{}" to the set'.format(addr))
+            subprocess.run('ipset -exist add stratosphere {}'.format(ipaddress.ip_address(addr)), shell=True, check=True)
+        except ValueError:
+            logging.debug('adding "{}" to the set failed'.format(addr))
+            pass
+    logging.info('stratosphere ipset is ready')
+
+    #  Add this ipset to the filter 
+    mk_iptables_rule('stratosphere src')
+    mk_iptables_rule('stratosphere dst')
+else:
+    logging.critical('Unable to update the Statosphere blacklist\nHTTP status code = {} - {}\n{}'.format(blacklist.status_code, blacklist.reason, blacklist.text))
+    exit(1)
