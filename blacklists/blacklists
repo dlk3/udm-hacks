@@ -58,7 +58,7 @@ def mk_iptables_rule(rule):
     if not found:
         logging.info('adding BLISTS filter to the FORWARD chain in iptables')
         try:
-            subprocess.run('iptables -I FORWARD 2 -j BLISTS', shell=True, check=True)
+            subprocess.run('iptables -I FORWARD 3 -j BLISTS', shell=True, check=True)
         except:
             pass
 
