@@ -1,108 +1,223 @@
 #!/usr/bin/env python3
 
-stratosphere_url = 'https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP-Prioritize_Consistent-latest.csv'
+ntop_lists_paths = ['/usr/share/ntopng/httpdocs/misc/lists/builtin', '/usr/share/ntopng/httpdocs/misc/lists/custom']
 
 #  Configure logging
 import logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-import requests
 import subprocess
 import ipaddress
+import os
+import json
+import socket
 
-#  Add the iptables rules we need to define a new blacklists chain that logs and drops
-#  the packets coming in from blacklisted addresses in the given ipset
-def mk_iptables_rule(rule):
+# Make sure that iptables has the rules we need to define a blacklists chain called NTOPNG 
+# that logs and drops the packets coming in from blacklisted addresses listed in an ipset
+def mk_iptables_rules():
     
-    #  Define the BLISTS chain that filters packets based on the blacklist sets
+    #  Define the NTOPNG chain that filters packets based on the blacklist sets
     try:
-        proc = subprocess.run('iptables -nL BLISTS', shell=True, check=True, capture_output=True)
-        logging.debug('BLISTS chain already exists in iptables')
+        proc = subprocess.run('iptables -nL NTOPNG', shell=True, check=True, capture_output=True)
+        logging.debug('NTOPNG target already exists in iptables')
     except:
-        logging.info('defining new BLISTS chain in iptables')
-        subprocess.run('iptables -N BLISTS', shell=True, check=True)
+        logging.info('defining new NTOPNG target in iptables')
+        subprocess.run('iptables -N NTOPNG', shell=True, check=True)
 
-    #  Define the BLISTSLOGNDROP log and drop target
+    #  Define the NTOPNGLOGNDROP log and drop target
     try:
-        proc = subprocess.run('iptables -nL BLISTSLOGNDROP', shell=True, check=True, capture_output=True)
-        logging.debug('BLISTSLOGNDROP target already exists in iptables')
+        proc = subprocess.run('iptables -nL NTOPNGLOGNDROP', shell=True, check=True, capture_output=True)
+        logging.debug('NTOPNGLOGNDROP target already exists in iptables')
     except:
-        logging.info('defining new BLISTSLOGNDROP target in iptables')
-        subprocess.run('iptables -N BLISTSLOGNDROP', shell=True, check=True)
-        subprocess.run('iptables -A BLISTSLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "BLISTS BLOCK: "', shell=True, check=True)
-        subprocess.run('iptables -A BLISTSLOGNDROP -j DROP', shell=True, check=True)
+        logging.info('defining new NTOPNGLOGNDROP target in iptables')
+        subprocess.run('iptables -N NTOPNGLOGNDROP', shell=True, check=True)
+        subprocess.run('iptables -A NTOPNGLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "', shell=True, check=True)
+        subprocess.run('iptables -A NTOPNGLOGNDROP -j DROP', shell=True, check=True)
 
-    #  Add the INPUT rule that routes all traffic to the BLISTS filtering chain
+    #  Add the INPUT rule that routes all traffic to the NTOPNG filtering chain
     found = False
     proc = subprocess.run('iptables -nL INPUT', shell=True, check=True, capture_output=True)
     for line in proc.stdout.decode('utf-=8').split('\n'):
-        if 'BLISTS' in line:
+        if 'NTOPNG' in line:
             found = True
-            logging.debug('BLISTS filter already in the INPUT chain in iptables')
+            logging.debug('NTOPNG target already in the INPUT chain in iptables')
             break
     if not found:
-        logging.info('adding BLISTS filter to the INPUT chain in iptables')
+        logging.info('adding NTOPNG target to the INPUT chain in iptables')
         try:
-            proc = subprocess.run('iptables -I INPUT 2 -j BLISTS', shell=True, check=True, capture_output=True)
+            index = len(proc.stdout.decode('utf-=8').split('\n')) - 3
+            subprocess.run('iptables -I INPUT {} -j NTOPNG'.format(index), shell=True, check=True, capture_output=True)
         except:
             pass
 
-    #  Add the FORWARD rule that routes all traffic to the BLISTS filtering chain
+    #  Add the FORWARD rule that routes all traffic to the NTOPNG filtering chain
     found = False
     proc = subprocess.run('iptables -nL FORWARD', shell=True, check=True, capture_output=True)
     for line in proc.stdout.decode('utf-=8').split('\n'):
-        if 'BLISTS' in line:
+        if 'NTOPNG' in line:
             found = True
-            logging.debug('BLISTS filter is already in the FORWARD chain in iptables')
+            logging.debug('NTOPNG target is already in the FORWARD chain in iptables')
             break
     if not found:
-        logging.info('adding BLISTS filter to the FORWARD chain in iptables')
+        logging.info('adding NTOPNG target to the FORWARD chain in iptables')
         try:
-            subprocess.run('iptables -I FORWARD 3 -j BLISTS', shell=True, check=True)
+            index = len(proc.stdout.decode('utf-=8').split('\n')) - 3
+            subprocess.run('iptables -I FORWARD {}  -j NTOPNG'.format(index), shell=True, check=True, capture_output=True)
         except:
             pass
 
-    #  Add the rule that adds the ipset to the BLISTS filtering chain
-    found = False
-    proc = subprocess.run('iptables -nL BLISTS', shell=True, check=True, capture_output=True)
-    for line in proc.stdout.decode('utf-=8').split('\n'):
-        if rule in line:
-            found = True
-            logging.debug('"{}" ipset rule already exists in iptables'.format(rule))
-            break
-    if not found:
-        logging.info('adding "{}" ipset rule to the BLISTS chain in iptables'.format(rule))
+    # Create the ipset (has no effect if it alreay exists)
+    subprocess.run('ipset -exist create ntopng "hash:net"', shell=True, check=True)
+
+    #  Add the ipset filtering rules to the NTOPNG chain
+    for ipset_rule in ['ntopng src', 'ntopng dst']:
+        found = False
+        proc = subprocess.run('iptables -nL NTOPNG', shell=True, check=True, capture_output=True)
+        for line in proc.stdout.decode('utf-=8').split('\n'):
+            if ipset_rule in line:
+                found = True
+                logging.debug('"{}" ipset rule already exists in NTOPNG chain'.format(ipset_rule))
+                break
+        if not found:
+            logging.info('adding "{}" ipset rule to the NTOPNG chain'.format(ipset_rule))
+            try:
+                subprocess.run('iptables -A NTOPNG -m set --match-set {} -j NTOPNGLOGNDROP'.format(ipset_rule), shell=True, check=True, capture_output=True)
+            except:
+                pass
+
+#  Back out the changes made by mk_iptables_rules()
+def rm_iptables_rules():
+    cmds = [
+        'iptables -D INPUT -j NTOPNG',
+        'iptables -D FORWARD -j NTOPNG',
+        'iptables -D NTOPNGLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "',
+        'iptables -D NTOPNGLOGNDROP -j DROP',
+        'iptables -D NTOPNG -m set --match-set ntopng src -j NTOPNGLOGNDROP',
+        'iptables -D NTOPNG -m set --match-set ntopng dst -j NTOPNGLOGNDROP',
+        'iptables -X NTOPNGLOGNDROP',
+        'iptables -X NTOPNG',
+        'ipset destroy ntopng'
+    ]
+    for cmd in cmds:
         try:
-            subprocess.run('iptables -A BLISTS -m set --match-set {} -j BLISTSLOGNDROP'.format(rule), shell=True, check=True)
+            subprocess.run(cmd, shell=True, check=True, capture_output=True)
         except:
             pass
 
-#  Build an ipset based on the data in the Stratosphere blacklist
-blacklist = requests.get(stratosphere_url)
-if blacklist.status_code == 200:
-    logging.info('updating the stratosphere ipset')
-    #  Clear the set or create it if it doesn't exist
+#  Find the "category_lists" directory on the UDM data volumes /data or /volume1
+def find_category_lists_path():
+    for ntop_data_path in ['/volume1', '/data']:
+        for root, paths, files in os.walk(ntop_data_path):
+            for path in paths:
+                if path == 'category_lists':
+                    return os.path.join(root, path)
+    return False
+
+#  Resolve a hostname to an IP address
+def resolve_hostname(hostname):
     try:
-        logging.debug('flushing the set')
-        subprocess.run('ipset flush stratosphere', shell=True, check=True)
+        for line in socket.getaddrinfo(hostname, 0, family=socket.AF_INET, type=socket.SOCK_STREAM):
+            return line[4][0]
+    except socket.gaierror:
+        pass
     except:
-        logging.debug('flush failed, create the set')
-        subprocess.run('ipset -exist create stratosphere "hash:ip"', shell=True, check=True)
+        logging.exception('Exception while resolving hostname: {}'.format(hostname), exc_info=True)
 
-    #  Add the IP addresses to the set
-    for line in blacklist.content.decode('utf-8').split('\n'):
-        addr = line.split(',')[0]
-        try:
-            logging.debug('adding "{}" to the set'.format(addr))
-            subprocess.run('ipset -exist add stratosphere {}'.format(ipaddress.ip_address(addr)), shell=True, check=True)
-        except ValueError:
-            logging.debug('adding "{}" to the set failed'.format(addr))
-            pass
-    logging.info('stratosphere ipset is ready')
+    logging.debug('Unable to resolve hostname: {}'.format(hostname))
+    return
 
-    #  Add this ipset to the filter 
-    mk_iptables_rule('stratosphere src')
-    mk_iptables_rule('stratosphere dst')
-else:
-    logging.critical('Unable to update the Statosphere blacklist\nHTTP status code = {} - {}\n{}'.format(blacklist.status_code, blacklist.reason, blacklist.text))
-    exit(1)
+def load_list(list_name, ipset_name):
+    #  Read this list's data file from ntopng's data directory into a list
+    category_lists_path = find_category_lists_path()
+    if not category_lists_path:
+        logging.critical('Unable to locate ntopng\'s category_lists directory')
+        return False
+    file_name = os.path.join(category_lists_path, '{}.txt'.format(list_name))
+    try:
+        with open(file_name) as f:
+            lines = f.read().splitlines()
+    except:
+        logging.exception('Unable to read "{}"'.format(file_name), exc_info=True)
+        return False
+
+    #  Remove comment and blank lines
+    temp_lines = []
+    for line in lines:
+        if not line.strip().startswith('#') and line.strip() != '':
+            temp_lines.append(line)
+    del lines
+
+    #  Parse each line and add the ip/netmask value to the hash:net ipset
+    for line in temp_lines:
+        ip = None
+        if ',' in line:
+            ip = line.split(',')[0]
+        else:
+            line = line.split()
+            if line[0] == '127.0.0.1' or line[0] == '0.0.0.0':
+                ip = resolve_hostname(line[1])
+            else:
+                ip = line[0]
+ 
+        if ip:
+            #  Add the netmask to IP addresses that don't have them
+            if not '/' in ip:
+                ip = '{}/32'.format(ip)
+
+            # Validate the ip address format
+            try:
+                ipaddress.ip_address(ip.split('/')[0])
+            except:
+                logging.debug('"{}" is not a valid ip address'.format(ip))
+                continue
+
+            #  Loopback and private ip addresses should never be blacklisted
+            ip_split = ip.split('.')
+            if (ip.startswith('0.0.0.0') 
+                    or ip.startswith('127.0.0.') 
+                    or ip.startswith('255.255.255.') 
+                    or ip.startswith('192.168.') 
+                    or ip.startswith('10.')
+                    or (ip_split[0] == '100' and int(ip_split[1]) >= 64 and int(ip_split[1]) <= 127)
+                    or (ip_split[0] == '172' and int(ip_split[1]) >= 16 and int(ip_split[1]) <= 31)
+                    or ip.startswith('1.0.0.1')   # Cloudflare nameserver
+                    or ip.startswith('1.1.1.1')   # Cloudflare nameserver
+                    or ip.startswith('8.8.4.4')   # Google nameserver
+                    or ip.startswith('8.8.8.8')   # Google nameserver
+                ):
+                logging.debug('{} cannot be blacklisted'.format(ip))
+                continue
+
+            #  Add the address to the ipset
+            try:
+                logging.debug('adding "{}" to the {} ipset'.format(ip, ipset_name))
+                subprocess.run('ipset -exist add {} {}'.format(ipset_name, ip), shell=True, check=True)
+            except:
+                logging.exception('ERROR: ipset -exist add {} {}'.format(ipset_name, ip), exc_info=True)
+
+#  Make sure that the iptables rules we need to make this all work are in place
+mk_iptables_rules()
+
+logging.debug('Creating temporary ipset: new_ntopng')
+subprocess.run('ipset -exist create new_ntopng "hash:net"', shell=True)
+subprocess.run('ipset flush new_ntopng', shell=True)
+
+#  Load the temporary ipset with the addresses from ntopng's active blacklists
+for ntop_path in ntop_lists_paths:
+    #  Inspect all the list definitions found in ntop_list_paths directories
+    for root, paths, files in os.walk(ntop_path):
+        # If the list is enabled in ntopng, process it into the ipset
+        for file in files:
+            if os.path.splitext(file)[1] == '.list':
+                with open(os.path.join(root, file), 'r') as f:
+                    list_def = json.load(f)
+                    if list_def['enabled'] == True:
+                        logging.info('Processing ntopng list file: "{}"'.format(file))
+                        load_list(list_def['name'], 'new_ntopng')
+                    else:
+                        logging.debug('{} is not enabled, skipping'.format(file))
+
+logging.debug('Swaping temporary ipset in place of the old one: ntopng') 
+subprocess.run('ipset swap new_ntopng ntopng', shell=True)
+subprocess.run('ipset destroy new_ntopng', shell=True)
+

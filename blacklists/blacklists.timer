@@ -1,5 +1,5 @@
 [Unit]
-Description=updating ip address blacklists
+Description=updating ip address blacklist
 
 [Timer]
 OnCalendar=*-*-* 04:00:00

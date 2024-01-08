@@ -2,14 +2,14 @@
 <head>
 	<meta charset="utf-8"/>
 	<link rel="stylesheet" href="markdown.css">
-	<title>Block Internet Traffic Based On The Stratosphere Labs IP Address Blacklist</title>
+	<title>Block Internet Traffic From The IP Addresses In The Active NtopNG Blacklists</title>
 </head>
 <body class="export">
 <h1>Block Internet Traffic Based On The Stratosphere Labs IP Address Blacklist</h1>
 
-<p>The script in this package configures iptables on the UDM Pro to block all traffic from the IP addresses listed in the <a href="https://www.stratosphereips.org/attacker-ip-prioritization-blacklist">Stratosphere Labs CTU-AIPP Blacklist</a>.  The script is executed once a day using systemd to update the list of blocked addresses.</p>
+<p>The script in this package configures iptables on the UDM Pro to block all traffic from the IP addresses that are listed in the active NtopNG blacklists.  The script is executed through systemd once a day to refresh the UDM blacklist.  Only the active ntopng blacklists are used.  See the <code>Settings -> Blacklists</code> menu in NtopNG to configure the active lists.</p>
 
-<h2>Installing the blocklists Debian package</h2>
+<h2>Installing the blacklists Debian package</h2>
 
 <p>To enable my PPA repository on the UDM, use ssh to connect to the UDM as the root user and issue these commands:</p>
 
