@@ -231,7 +231,6 @@ if __name__ == "__main__":
     cmdline = OptionParser(usage="usage: %prog [-d | --debug]", description='This script configures the local system\'s iptables firewall to block traffic from the IP addresses listed in the ntopng blacklists.  It is designed to be run daily to apply the changes made to the blacklists as they are updated by ntopng.  For more details see https://daveking.com/udm-hacks/blacklists.html')
     cmdline.add_option('-c', '--config', dest='conffile', default=config_fn, help='Full path to configuration file.  Default: {}'.format(config_fn))
     cmdline.add_option('-d', '--debug', action='store_true', dest='debug', default=False, help='Write debugging messages')
-    cmdline.add_option('-i', '--iptables-only', action='store_true', dest='only_iptables', default=False, help='Restore the iptables configuration only, do not refresh the blacklists.')
     opts, args = cmdline.parse_args()
     log = logging.getLogger()
     if opts.debug:
@@ -265,8 +264,6 @@ if __name__ == "__main__":
         
     #  Make sure that the iptables rules we need to make this all work are in place
     mk_iptables_rules()
-    if opts.only_iptables:
-        exit(0)
 
     logging.debug('Creating temporary ipset: new_ntopng')
     subprocess.run('ipset -exist create new_ntopng "hash:net"', shell=True)

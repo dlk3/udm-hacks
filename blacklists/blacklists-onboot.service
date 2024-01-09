@@ -1,7 +1,0 @@
-[Unit]
-Description=updating ntopng ipset from ntopng blacklists
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/blacklists --iptables-only
-

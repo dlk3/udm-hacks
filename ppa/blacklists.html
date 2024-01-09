@@ -23,7 +23,7 @@ apt update</code></pre>
 <h2>Running the Script</h2>
 
 <p>Systemd controls the execution of the script.  As installed, the script runs every day at 4 AM.  To adjust this timer, adjust the <code>OnCalendar</code> setting in the <code>/etc/systemd/system/blacklists.timer</code> file.</p>
-<p>Systemd will also run the script 2 minutes after the UDM is rebooted.  This is done to redefine the iptables rules needed to do the blacklisting, which were lost when the system shut down.</p>
+<p>Systemd will also run the script 2 minutes after the UDM is rebooted to regenerate the blacklist in iptables.</p>
 
 <h2>Useful Commands</h2>
 
