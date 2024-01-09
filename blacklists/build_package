@@ -3,7 +3,7 @@
 set -e
 
 PKGNAME="blacklists"
-PKGVER="2.0"
+PKGVER="2.1"
 PKGREL="0"
 PKGARCH="arm64"
 PKGMAINT="Dave King <dave@daveking.com>"
@@ -15,10 +15,12 @@ rm -fr ${BUILDDIR} &>/dev/null
 mkdir -p ${BUILDDIR}/DEBIAN
 mkdir -p ${BUILDDIR}/etc/systemd/system
 mkdir -p ${BUILDDIR}/usr/bin
+mkdir -p ${BUILDDIR}/data/blacklists
 
 cp -v postinst ${BUILDDIR}/DEBIAN/
 cp -v blacklists.timer blacklists.service ${BUILDDIR}/etc/systemd/system/
 cp -v blacklists ${BUILDDIR}/usr/bin/
+cp -v blacklists.conf.sample ${BUILDDIR}/data/blacklists/
 chmod 755 ${BUILDDIR}/usr/bin/blacklists
 
 cat <<_EOF_ >${BUILDDIR}/DEBIAN/control

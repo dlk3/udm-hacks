@@ -1,5 +1,5 @@
 [Unit]
-Description=updating ip address blacklist
+Description=updating ntopng ipset from ntopng blacklists
 
 [Timer]
 OnCalendar=*-*-* 04:00:00

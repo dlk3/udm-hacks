@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
 
+#  This script configures iptables on the UDM Pro to block all traffic from 
+#  the IP addresses that are listed in the ntopng blacklists.
+#
+#  Copyright (C) 2024  David King <dave@daveking.com>
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License,
+#  version 2, as published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not,   If not, see 
+#  <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
+
+#  A list of the  directories where ntopng keeps the updated copies of blacklists it 
+#  downloads and the custom lists the user has defined
 ntop_lists_paths = ['/usr/share/ntopng/httpdocs/misc/lists/builtin', '/usr/share/ntopng/httpdocs/misc/lists/custom']
 
 #  Configure logging
@@ -11,12 +31,15 @@ import ipaddress
 import os
 import json
 import socket
+import sys
+from optparse import OptionParser
 
 # Make sure that iptables has the rules we need to define a blacklists chain called NTOPNG 
 # that logs and drops the packets coming in from blacklisted addresses listed in an ipset
+# named ntopng
 def mk_iptables_rules():
     
-    #  Define the NTOPNG chain that filters packets based on the blacklist sets
+    #  Create the NTOPNG chain that filters packets based on the blacklist sets
     try:
         proc = subprocess.run('iptables -nL NTOPNG', shell=True, check=True, capture_output=True)
         logging.debug('NTOPNG target already exists in iptables')
@@ -34,7 +57,7 @@ def mk_iptables_rules():
         subprocess.run('iptables -A NTOPNGLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "', shell=True, check=True)
         subprocess.run('iptables -A NTOPNGLOGNDROP -j DROP', shell=True, check=True)
 
-    #  Add the INPUT rule that routes all traffic to the NTOPNG filtering chain
+    #  Add the INPUT rule that routes all traffic to the NTOPNG target
     found = False
     proc = subprocess.run('iptables -nL INPUT', shell=True, check=True, capture_output=True)
     for line in proc.stdout.decode('utf-=8').split('\n'):
@@ -50,7 +73,7 @@ def mk_iptables_rules():
         except:
             pass
 
-    #  Add the FORWARD rule that routes all traffic to the NTOPNG filtering chain
+    #  Add the FORWARD rule that routes all traffic to the NTOPNG target
     found = False
     proc = subprocess.run('iptables -nL FORWARD', shell=True, check=True, capture_output=True)
     for line in proc.stdout.decode('utf-=8').split('\n'):
@@ -66,10 +89,10 @@ def mk_iptables_rules():
         except:
             pass
 
-    # Create the ipset (has no effect if it alreay exists)
+    # Create the ntopng ipset (has no effect if the ipset alreay exists)
     subprocess.run('ipset -exist create ntopng "hash:net"', shell=True, check=True)
 
-    #  Add the ipset filtering rules to the NTOPNG chain
+    #  Add the two ntopng ipset filtering rules to the NTOPNG chain
     for ipset_rule in ['ntopng src', 'ntopng dst']:
         found = False
         proc = subprocess.run('iptables -nL NTOPNG', shell=True, check=True, capture_output=True)
@@ -86,6 +109,7 @@ def mk_iptables_rules():
                 pass
 
 #  Back out the changes made by mk_iptables_rules()
+#  (This is not used, it's included here just for reference.)
 def rm_iptables_rules():
     cmds = [
         'iptables -D INPUT -j NTOPNG',
@@ -104,7 +128,7 @@ def rm_iptables_rules():
         except:
             pass
 
-#  Find the "category_lists" directory on the UDM data volumes /data or /volume1
+#  Find ntopng's "category_lists" directory on the UDM data volumes /volume1 or /data
 def find_category_lists_path():
     for ntop_data_path in ['/volume1', '/data']:
         for root, paths, files in os.walk(ntop_data_path):
@@ -126,6 +150,23 @@ def resolve_hostname(hostname):
     logging.debug('Unable to resolve hostname: {}'.format(hostname))
     return
 
+#  Check to see if an ip address is in the excluded_address list defined above
+def check_if_excluded(ip):
+    try:
+        ip = ip.split('/')[0]
+        def convert_ipv4(ip):
+            return tuple(int(n) for n in ip.split('.'))
+        for item in excluded_addresses:
+            if '-' in item:
+                start, end = item.split('-')
+            else:
+                start = end = item
+            if convert_ipv4(start) <= convert_ipv4(ip) <= convert_ipv4(end):
+                return True
+    except:
+        logging.warning('Unexpected exception in check_if_excluded(), "{}" is not excluded'.format(ip), exc_info=True)
+    return False
+    
 def load_list(list_name, ipset_name):
     #  Read this list's data file from ntopng's data directory into a list
     category_lists_path = find_category_lists_path()
@@ -172,19 +213,7 @@ def load_list(list_name, ipset_name):
                 continue
 
             #  Loopback and private ip addresses should never be blacklisted
-            ip_split = ip.split('.')
-            if (ip.startswith('0.0.0.0') 
-                    or ip.startswith('127.0.0.') 
-                    or ip.startswith('255.255.255.') 
-                    or ip.startswith('192.168.') 
-                    or ip.startswith('10.')
-                    or (ip_split[0] == '100' and int(ip_split[1]) >= 64 and int(ip_split[1]) <= 127)
-                    or (ip_split[0] == '172' and int(ip_split[1]) >= 16 and int(ip_split[1]) <= 31)
-                    or ip.startswith('1.0.0.1')   # Cloudflare nameserver
-                    or ip.startswith('1.1.1.1')   # Cloudflare nameserver
-                    or ip.startswith('8.8.4.4')   # Google nameserver
-                    or ip.startswith('8.8.8.8')   # Google nameserver
-                ):
+            if check_if_excluded(ip):
                 logging.debug('{} cannot be blacklisted'.format(ip))
                 continue
 
@@ -195,29 +224,67 @@ def load_list(list_name, ipset_name):
             except:
                 logging.exception('ERROR: ipset -exist add {} {}'.format(ipset_name, ip), exc_info=True)
 
-#  Make sure that the iptables rules we need to make this all work are in place
-mk_iptables_rules()
+if __name__ == "__main__":
 
-logging.debug('Creating temporary ipset: new_ntopng')
-subprocess.run('ipset -exist create new_ntopng "hash:net"', shell=True)
-subprocess.run('ipset flush new_ntopng', shell=True)
+    #  Define command-line options for the config file and debugging
+    config_fn = '/data/blacklists/blacklists.conf'
+    cmdline = OptionParser(usage="usage: %prog [-d | --debug]", description='This script configures the local system\'s iptables firewall to block traffic from the IP addresses listed in the ntopng blacklists.  It is designed to be run daily to apply the changes made to the blacklists as they are updated by ntopng.  For more details see https://daveking.com/udm-hacks/blacklists.html')
+    cmdline.add_option('-c', '--config', dest='conffile', default=config_fn, help='Full path to configuration file.  Default: {}'.format(config_fn))
+    cmdline.add_option('-d', '--debug', action='store_true', dest='debug', default=False, help='Write debugging messages')
+    opts, args = cmdline.parse_args()
+    log = logging.getLogger()
+    if opts.debug:
+        log.setLevel(logging.DEBUG)
 
-#  Load the temporary ipset with the addresses from ntopng's active blacklists
-for ntop_path in ntop_lists_paths:
-    #  Inspect all the list definitions found in ntop_list_paths directories
-    for root, paths, files in os.walk(ntop_path):
-        # If the list is enabled in ntopng, process it into the ipset
-        for file in files:
-            if os.path.splitext(file)[1] == '.list':
-                with open(os.path.join(root, file), 'r') as f:
-                    list_def = json.load(f)
-                    if list_def['enabled'] == True:
-                        logging.info('Processing ntopng list file: "{}"'.format(file))
-                        load_list(list_def['name'], 'new_ntopng')
-                    else:
-                        logging.debug('{} is not enabled, skipping'.format(file))
+    #  Execute the configuration file
+    if not os.path.exists(opts.conffile):
+        logging.critical('{} configuration file does not exist'.format(opts.conffile))
+        exit(1)
+    logging.debug('Executing the configuration file: {}'.format(opts.conffile))
+    try:
+        with open(opts.conffile) as f:
+            code = compile(f.read(), opts.conffile, 'exec')
+            exec(code)
+    except:
+        logging.exception('Unable to execute config file "{}"'.format(opts.conffile), exc_info=True)
+        exit(1)
 
-logging.debug('Swaping temporary ipset in place of the old one: ntopng') 
-subprocess.run('ipset swap new_ntopng ntopng', shell=True)
-subprocess.run('ipset destroy new_ntopng', shell=True)
+    #  The excluded_addresses list should have come from the config file, but if 
+    #  it didn't then we'll use this one.
+    if not excluded_addresses:
+        excluded_addresses = [
+            '0.0.0.0',
+            '255.255.255.255',
+            '127.0.0.0-127.255.255.255',
+            '192.168.0.0-192.168.255.255',
+            '10.0.0.0-10.255.255.255',
+            '100.64.0.0-100.127.255.255',
+            '172.16.0.0-172.31.255.255'
+        ]
+        
+    #  Make sure that the iptables rules we need to make this all work are in place
+    mk_iptables_rules()
+
+    logging.debug('Creating temporary ipset: new_ntopng')
+    subprocess.run('ipset -exist create new_ntopng "hash:net"', shell=True)
+    subprocess.run('ipset flush new_ntopng', shell=True)
+
+    #  Load the temporary ipset with the addresses from ntopng's active blacklists
+    for ntop_path in ntop_lists_paths:
+        #  Inspect all the list definitions found in ntop_list_paths directories
+        for root, paths, files in os.walk(ntop_path):
+            # If the list is enabled in ntopng, process it into the ipset
+            for file in files:
+                if os.path.splitext(file)[1] == '.list':
+                    with open(os.path.join(root, file), 'r') as f:
+                        list_def = json.load(f)
+                        if list_def['enabled'] == True:
+                            logging.info('Processing ntopng list file: "{}"'.format(file))
+                            load_list(list_def['name'], 'new_ntopng')
+                        else:
+                            logging.debug('{} is not enabled, skipping'.format(file))
+
+    logging.debug('Swaping temporary ipset in place of the old one: ntopng') 
+    subprocess.run('ipset swap new_ntopng ntopng', shell=True)
+    subprocess.run('ipset destroy new_ntopng', shell=True)
 

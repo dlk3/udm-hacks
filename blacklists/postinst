@@ -20,6 +20,11 @@ esac
 
 umask 022
 
+#  If there isn't already an existing configuration file, create one
+if [ ! -f /data/blacklists/blacklists.conf ]; then
+	cp /data/blacklists/blacklists.conf.sample /data/blacklists/blacklists.conf
+fi
+
 #  Enable and start the blacklists.timer
 systemctl daemon-reload
 systemctl reset-failed

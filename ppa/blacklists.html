@@ -2,12 +2,12 @@
 <head>
 	<meta charset="utf-8"/>
 	<link rel="stylesheet" href="markdown.css">
-	<title>Block Internet Traffic From The IP Addresses In The Active NtopNG Blacklists</title>
+	<title>Block Internet Traffic From The IP Addresses In The ntopng Blacklists</title>
 </head>
 <body class="export">
-<h1>Block Internet Traffic Based On The Stratosphere Labs IP Address Blacklist</h1>
+<h1>Block Internet Traffic From The IP Addresses In The ntopng Blacklists</h1>
 
-<p>The script in this package configures iptables on the UDM Pro to block all traffic from the IP addresses that are listed in the active NtopNG blacklists.  The script is executed through systemd once a day to refresh the UDM blacklist.  Only the active ntopng blacklists are used.  See the <code>Settings -> Blacklists</code> menu in NtopNG to configure the active lists.</p>
+<p>The script in this package configures iptables on the UDM Pro to block all traffic from the IP addresses that are listed in the active ntopng blacklists.  The script is executed through systemd once a day to refresh the UDM blacklist.  Only the active ntopng blacklists are used.  See the <code>Settings -> Blacklists</code> menu in ntopng to configure the active lists.</p>
 
 <h2>Installing the blacklists Debian package</h2>
 
@@ -23,3 +23,22 @@ apt update</code></pre>
 <h2>Running the Script</h2>
 
 <p>Systemd controls the execution of the script.  As installed, the script runs every day at approximately 4 AM.  To adjust this timer, adjust the <code>OnCalendar</code> setting in the <code>/etc/systemd/system/blacklists.timer</code> file.</p>
+
+<h2>Useful Commands</h2>
+
+<p>(Assuming that you have logged in to your UDM Pro via ssh.)</p>
+
+<ul>
+<li><code>journalctl -e -g "NTOPNG BLOCK"</code> - lists the system log entries for the packets that iptables has blocked as a result of using this script.
+<p>Limits are set for logging.  If the UDM is flooded with packets coming from blacklisted addresses a maximum of 5 packets per minute will be logged.  The rest will be blocked silently, without a log entry.</p></li>
+
+<li><code>ipset list ntopng</code> - lists all the addresses and networks that are blacklisted by iptables as a result of using this script.
+<p>This "ntopng" ipset gets rebuilt evey night by the <code>blacklists</code> script, based on the contents of the ntopng blacklists, which ntopng updates every day.</p></li>
+
+<li><code>ipset test ntopng <i>ipaddress</i></code> - test to see if a given IP address is in the "ntopng" ipset and will therefore be blocked by iptables.</li>
+
+<li><code>ipset del ntopng <i>ipaddress[/netmask]</i></code> - temporarily unblocks an IP address or network by removing it from the "ntopng" ipset.
+<p>To prevent the address being blocked again when the <code>blacklists</code> script rebuilds the ipset, add the address to the list of excluded IP addresses called <code>excluded_addresses</code> in the <code>/data/blacklists/blacklists.conf</code> file.</p></li>
+
+<li><code>iptables -nvL | less</code> - shows the iptables rules configuration.  Searching for the string "NTOPNG" will locate all the rules inserted by this script.</li>
+</ul>
