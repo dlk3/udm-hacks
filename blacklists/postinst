@@ -30,6 +30,7 @@ systemctl daemon-reload
 systemctl reset-failed
 if [ -z "$PREV_VERSION" ]; then
 	systemctl enable blacklists.timer
+	systemctl enable blacklists-onboot.timer
 fi
 systemctl -q is-enabled blacklists.timer && systemctl restart blacklists.timer
 

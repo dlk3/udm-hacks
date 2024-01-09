@@ -1,0 +1,18 @@
+#  Configuration file for the blacklists script
+#
+#  The blacklist script executes this file as Python code
+
+#  List of individual IP addresses or address ranges that should never be blacklisted
+excluded_addresses = [
+	'0.0.0.0',                         #  Do not remove
+	'255.255.255.255',                 #  Do not remove
+	'127.0.0.0-127.255.255.255',       #  Do not remove
+	'192.168.0.0-192.168.255.255',     #  Do not remove
+	'10.0.0.0-10.255.255.255',         #  Do not remove
+	'100.64.0.0-100.127.255.255',      #  Do not remove
+	'172.16.0.0-172.31.255.255',       #  Do not remove
+	'1.0.0.1',                         #  Cloudflare nameserver
+	'1.1.1.1',                         #  Cloudflare nameserver
+	'8.8.4.4',                         #  Google nameserver
+	'8.8.8.8'                          #  Google nameserver
+]

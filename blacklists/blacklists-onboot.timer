@@ -2,8 +2,7 @@
 Description=updating ntopng ipset from ntopng blacklists
 
 [Timer]
-OnStartupSec=120
-OnCalendar=*-*-* 04:00:00
+OnBootSec=120
 Persistent=true
 
 [Install]
