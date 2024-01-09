@@ -1,6 +1,6 @@
 Hacks in this repository:
 
-* **blacklists** - Configure iptables on the UDM to block the ip addresses contained in the Stratosphere Labs blacklist
+* **blacklists** - Configure iptables on the UDM to block the ip addresses contained in the ntopng blacklists
 * **camera_poe_ctl** - Turning UDM Protect cameras' POE power on and off based on SmartThings' location status
 
 Things that used to be here but which have moved:
