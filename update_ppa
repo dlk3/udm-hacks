@@ -35,8 +35,6 @@ prune() {
 }
 prune "${PPADIR%%/}/pool/main/b/blacklists"
 prune "${PPADIR%%/}/pool/main/c/camera-poe-ctl"
-prune "${PPADIR%%/}/pool/main/n/ntopng/unstable"
-prune "${PPADIR%%/}/pool/main/n/ntopng/stable"
 
 #  Use the repository's signing key
 export GNUPGHOME=${PPADIR}/../.gnupg
@@ -47,7 +45,6 @@ for SUBDIR in unstable stable; do
 	cd "${PPADIR}"
 	dpkg-scanpackages --arch arm64 pool/main/b/blacklists >dists/${SUBDIR}/main/binary-arm64/Packages
 	dpkg-scanpackages --arch arm64 pool/main/c/camera-poe-ctl >>dists/${SUBDIR}/main/binary-arm64/Packages
-	dpkg-scanpackages --arch arm64 pool/main/n/ntopng/${SUBDIR} >>dists/${SUBDIR}/main/binary-arm64/Packages
 	cat dists/${SUBDIR}/main/binary-arm64/Packages | gzip -9 >dists/${SUBDIR}/main/binary-arm64/Packages.gz
 
 	# Create the Release file in the repo
