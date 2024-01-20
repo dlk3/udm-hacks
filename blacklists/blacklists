@@ -54,7 +54,7 @@ def mk_iptables_rules():
     except:
         logging.info('defining new NTOPNGLOGNDROP target in iptables')
         subprocess.run('iptables -N NTOPNGLOGNDROP', shell=True, check=True)
-        subprocess.run('iptables -A NTOPNGLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "', shell=True, check=True)
+        subprocess.run('iptables -A NTOPNGLOGNDROP -m limit --limit 5/min --limit-burst 10 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "', shell=True, check=True)
         subprocess.run('iptables -A NTOPNGLOGNDROP -j DROP', shell=True, check=True)
 
     #  Add the INPUT rule that routes all traffic to the NTOPNG target
@@ -114,7 +114,7 @@ def rm_iptables_rules():
     cmds = [
         'iptables -D INPUT -j NTOPNG',
         'iptables -D FORWARD -j NTOPNG',
-        'iptables -D NTOPNGLOGNDROP -m limit --limit 1/min --limit-burst 5 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "',
+        'iptables -D NTOPNGLOGNDROP -m limit --limit 5/min --limit-burst 10 -j LOG --log-level warning --log-prefix "NTOPNG BLOCK: "',
         'iptables -D NTOPNGLOGNDROP -j DROP',
         'iptables -D NTOPNG -m set --match-set ntopng src -j NTOPNGLOGNDROP',
         'iptables -D NTOPNG -m set --match-set ntopng dst -j NTOPNGLOGNDROP',
