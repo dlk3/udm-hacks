@@ -1,0 +1,32 @@
+#!/bin/sh
+
+#  Recover my custom apps setup on the UDM Pro
+
+set -e
+
+#  Add repos for my hacks
+curl -s --compressed "https://daveking.com/udm-hacks/pgp-key.public" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/udm-hacks.gpg >/dev/null
+curl -s --compressed -o /etc/apt/sources.list.d/udm-hacks.list "https://daveking.com/udm-hacks/udm-hacks.list"
+
+#  Install ntopng
+rm apt-ntop.deb* | true
+wget https://packages.ntop.org/RaspberryPI/apt-ntop.deb
+dpkg -i apt-ntop.deb
+rm apt-ntop.deb
+
+#  Install my hacks
+apt update
+apt install jq tree camera-poe-ctl ntopng
+
+#  Install ntopng custom script
+cp /volume1/ntopng-extras/process_alerts.py /usr/share/ntopng/scripts/shell/
+chmod 755 /usr/share/ntopng/scripts/shell/process_alerts.py
+
+#  Start services
+systemctl restart redis
+sleep 5
+systemctl restart ntopng
+systemctl enable --now camera_poe_ctl.timer
+
+#  Restore commands to path
+ln -s /volume1/suricata-util /usr/local/bin/suricata-util

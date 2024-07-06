@@ -22,6 +22,9 @@
 #  downloads and the custom lists the user has defined
 ntop_lists_paths = ['/usr/share/ntopng/httpdocs/misc/lists/builtin', '/usr/share/ntopng/httpdocs/misc/lists/custom']
 
+#  Maximum number of elements that can be put into an ipset, default = 65536
+maxelem = 524288
+
 #  Configure logging
 import logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
@@ -89,8 +92,11 @@ def mk_iptables_rules():
         except:
             pass
 
-    # Create the ntopng ipset (has no effect if the ipset alreay exists)
-    subprocess.run('ipset -exist create ntopng "hash:net"', shell=True, check=True)
+    # Create the ntopng ipset, if it doesn't already exist
+    try:
+        subprocess.run('ipset create ntopng "hash:net" maxelem {}'.format(maxelem), shell=True, check=True, capture_output=True)
+    except subprocess.CalledProcessError:
+        pass
 
     #  Add the two ntopng ipset filtering rules to the NTOPNG chain
     for ipset_rule in ['ntopng src', 'ntopng dst']:
@@ -268,7 +274,7 @@ if __name__ == "__main__":
     mk_iptables_rules()
 
     logging.debug('Creating temporary ipset: new_ntopng')
-    subprocess.run('ipset -exist create new_ntopng "hash:net"', shell=True)
+    subprocess.run('ipset -exist create new_ntopng "hash:net" maxelem {}'.format(maxelem), shell=True)
     subprocess.run('ipset flush new_ntopng', shell=True)
 
     #  Load the temporary ipset with the addresses from ntopng's active blacklists
@@ -281,7 +287,7 @@ if __name__ == "__main__":
                     with open(os.path.join(root, file), 'r') as f:
                         list_def = json.load(f)
                         if list_def['enabled'] == True:
-                            logging.info('Processing ntopng list file: "{}"'.format(file))
+                            logging.info('Processing ntopng blacklist file: "{}"'.format(file))
                             load_list(list_def['name'], 'new_ntopng')
                         else:
                             logging.debug('{} is not enabled, skipping'.format(file))

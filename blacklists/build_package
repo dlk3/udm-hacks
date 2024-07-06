@@ -3,7 +3,7 @@
 set -e
 
 PKGNAME="blacklists"
-PKGVER="2.4.2"
+PKGVER="2.4.3"
 PKGREL="0"
 PKGARCH="arm64"
 PKGMAINT="Dave King <dave@daveking.com>"
